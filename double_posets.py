@@ -129,16 +129,13 @@ class DoublePoset(Parent, UniqueRepresentation):
         r"""
         .. TODO::
         
-            Make ``self`` a parent, or drop the ``Parent``
-            class.
-
         TESTS::
 
             sage: TestSuite(D).run()
 
         See also the extensive tests in the class documentation.
         """
-        Parent.__init__(self, category=category)
+        Parent.__init__(self, category=category, facade=True)
         self._P1 = P1
         self._P2 = P2
         self._elements = list(P1)
@@ -212,8 +209,6 @@ class DoublePoset(Parent, UniqueRepresentation):
         """
         return self._P1.__getitem__(i)
 
-    Element = Element
-    
     def an_element(self):
         r'''
         Return an element of ``self``.
