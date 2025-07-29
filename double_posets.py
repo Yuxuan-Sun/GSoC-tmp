@@ -564,6 +564,8 @@ class DoublePoset(Parent, UniqueRepresentation):
             True
             sage: D.flip() == D
             False
+            sage: D.flip().flip() is D
+            True
         """
         return DoublePoset(self._P2,
                                  self._P1)
