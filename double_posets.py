@@ -25,27 +25,29 @@ from sage.combinat.posets.elements import PosetElement
 from itertools import permutations, product
 from sage.structure.element import Element
 
-def DoublePoset(P1, P2, elements=None, category=None):
+class DoublePoset(Parent, UniqueRepresentation):
     r"""
-    Construct a finite double poset from various forms of
-    input data.
+    A (finite) double poset.
+
+    This means a finite set `E` equipped with two
+    partial orders `\leq_1` and `\leq_2`.
+    See [MalReu95]_.
 
     INPUT:
-
     - ``P1`` -- either a list of covering relations or a Sage ``Poset``
                 defining the first order `\leq_1`
     - ``P2`` -- likewise, defines the second order `\leq_2`
     - ``elements`` -- (optional) ordered list of all elements
                       of the ground set;
                       by default, taken to be the ground set of ``P1``
-
+    
     OUTPUT:
 
-    ``FiniteDoublePoset`` -- an instance of the
-    :class:`FiniteDoublePoset` class.
+    ``DoublePoset`` -- an instance of the
+    :class:`DoublePoset` class.
 
     If ``category`` is specified, then the poset is created in this
-    category instead of :class:`FiniteDoublePosets`.
+    category instead of :class:`DoublePosets`.
     
     .. TODO::
     
@@ -77,6 +79,18 @@ def DoublePoset(P1, P2, elements=None, category=None):
         sage: bool(D)
         True
 
+        sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
+        sage: D.elements()
+        {1, 2, 3}
+        sage: D.leq(1, 1, 2)   # 1 <=_1 2
+        True
+        sage: D.leq(2, 1, 3)   # 1 <=_2 3
+        True
+        sage: D.poset(1).cover_relations()
+        [(1, 2)]
+        sage: D.poset(2).cover_relations()
+        [(1, 3)]
+
     TESTS::
     
         sage: D = DoublePoset(Poset(), Poset())
@@ -88,45 +102,10 @@ def DoublePoset(P1, P2, elements=None, category=None):
         Finite poset containing 0 elements
         sage: bool(D)
         False
-    """
-    if P1 not in FinitePosets:
-        if elements is None:
-            # take the elements that appear in P1
-            elements = tuple([x for pair in P1 for x in pair])
-        P1 = Poset((elements, P1))
-    if P2 not in FinitePosets:
-        P2 = Poset((elements, P2))
-    return FiniteDoublePoset(P1=P1, P2=P2, category=category)
 
-class FiniteDoublePoset(Parent, UniqueRepresentation):
-    r"""
-    A (finite) double poset.
-
-    This means a finite set `E` equipped with two
-    partial orders `\leq_1` and `\leq_2`.
-    See [MalReu95]_.
-
-    INPUT:
-    - ``P1`` -- a Sage ``FinitePoset``
-                defining the first order `\leq_1`
-    - ``P2`` -- likewise, defines the second order `\leq_2`
-    
-    EXAMPLES::
-    
-        sage: D = FiniteDoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
-        sage: D.elements()
-        {1, 2, 3}
-        sage: D.leq(1, 1, 2)   # 1 <=_1 2
-        True
-        sage: D.leq(2, 1, 3)   # 1 <=_2 3
-        True
-        sage: D.poset(1).cover_relations()
-        [(1, 2)]
-        sage: D.poset(2).cover_relations()
-        [(1, 3)]
     """
     @staticmethod
-    def __classcall__(cls, P1, P2, category=None):
+    def __classcall__(cls, P1, P2, elements=None, category=None):
         """
         Normalize the arguments passed to the constructor.
 
@@ -136,6 +115,13 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         - ``P2`` -- a finite poset `P_2`, required to equal
           `P_1` as a set
         """
+        if P1 not in FinitePosets:
+            if elements is None:
+                # take the elements that appear in P1
+                elements = tuple([x for pair in P1 for x in pair])
+            P1 = Poset((elements, P1))
+        if P2 not in FinitePosets:
+            P2 = Poset((elements, P2))
         return super().__classcall__(cls, P1, P2,
                                      category=category)
 
@@ -157,7 +143,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         self._P2 = P2
         self._elements = list(P1)
 
-    def __repr__(self) -> str:
+    def _repr_(self) -> str:
         r"""
         Return a string representation of this finite double poset.
 
@@ -225,20 +211,6 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
             [3, 1, 2]
         """
         return self._P1.__getitem__(i)
-
-    def __list__(self):
-        r"""
-        Return the list of elements of the double poset.
-
-        TESTS::
-
-            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
-            sage: list(D)
-            [3, 1, 2]
-            sage: set(list(D)) == D.elements()
-            True
-        """
-        return self._P1.__list__()
 
     Element = Element
     
@@ -388,7 +360,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         Q1 = self._P1.relabel(relabeling=relabeling)
         Q2 = self._P2.relabel(relabeling=relabeling)
         elementsQ = list(Q1)
-        return FiniteDoublePoset(Q1, Q2)
+        return DoublePoset(Q1, Q2)
 
     def standardization(self):
         r"""
@@ -443,7 +415,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
         INPUT:
 
-        - ``other`` -- another ``FiniteDoublePoset`` to compose with ``self``;
+        - ``other`` -- another ``DoublePoset`` to compose with ``self``;
         - ``relabel`` (boolean, default: ``False``) --
         if ``True``, then each element `x` of
         ``self`` is relabelled as ``(1, x)`` whereas
@@ -452,7 +424,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
         OUTPUT:
 
-        - A new ``FiniteDoublePoset`` representing the composition of ``self`` and ``other``.
+        - A new ``DoublePoset`` representing the composition of ``self`` and ``other``.
 
         EXAMPLES::
 
@@ -549,11 +521,11 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
           - `S = E \setminus I` is its complement;
           - both `I` and `S` inherit their orders `<_1` and `<_2` from `E`.
 
-        This function returns all such decompositions, each as a pair of ``FiniteDoublePoset``s.
+        This function returns all such decompositions, each as a pair of ``DoublePoset``s.
 
         OUTPUT:
 
-        - A list of pairs `(I, S)` where `I` and `S` are ``FiniteDoublePoset`` instances.
+        - A list of pairs `(I, S)` where `I` and `S` are ``DoublePoset`` instances.
 
         EXAMPLES::
 
@@ -596,7 +568,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
             sage: D.flip().flip() == D
             True
         """
-        return FiniteDoublePoset(self._P2,
+        return DoublePoset(self._P2,
                                  self._P1)
 
     def pictures_iter(self, other):
@@ -657,7 +629,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
         INPUT:
 
-        - ``other`` -- a second ``FiniteDoublePoset`` with the same number of elements.
+        - ``other`` -- a second ``DoublePoset`` with the same number of elements.
 
         OUTPUT:
 
@@ -761,7 +733,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
         INPUT:
 
-        - ``other`` -- a second ``FiniteDoublePoset`` with the same number of elements.
+        - ``other`` -- a second ``DoublePoset`` with the same number of elements.
 
         OUTPUT:
 
