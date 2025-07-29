@@ -107,12 +107,43 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         self._elements = list(P1)
 
     def __repr__(self) -> str:
+        r"""
+        Return a string representation of this finite double poset.
+
+        TESTS::
+
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
+            sage: repr(D)
+            'Finite double poset containing 3 elements'
+
+            sage: D = DoublePoset([], [], elements=[])
+            sage: repr(D)
+            'Finite double poset containing 0 elements'
+        """
         return "Finite double poset containing " + str(len(self.elements())) + " elements"
 
     def __len__(self):
+        r"""
+        Return the number of elements of this double poset.
+
+        TESTS::
+
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3,4,5])
+            sage: len(D)
+            5
+        """
         return self._P1.cardinality()
 
     def elements(self):
+        r"""
+        Return the elements of this double poset.
+
+        TESTS::
+
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3,4,5])
+            sage: D.elements()
+            {1, 2, 3, 4, 5}
+        """
         return set(self._P1)
 
     base_set = elements
@@ -123,9 +154,30 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         return self._P1.__iter__()
 
     def __getitem__(self, i):
+        r"""
+        Return the `i`-th element of the double poset, according to the
+        ordering of the underlying first poset.
+
+        TESTS::
+
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
+            sage: [D[0],D[1],D[2]]  
+            [3, 1, 2]
+        """
         return self._P1.__getitem__(i)
 
     def __list__(self):
+        r"""
+        Return the list of elements of the double poset.
+
+        TESTS::
+
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
+            sage: list(D)
+            [3, 1, 2]
+            sage: set(list(D)) == D.elements()
+            True
+        """
         return self._P1.__list__()
 
     @lazy_attribute
@@ -142,6 +194,15 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
     Element = Element
     
     def an_element(self):
+        r'''
+        Return an element of ``self``
+
+        TESTS::
+
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
+            sage: D.an_element()
+            3
+        '''
         return list(self)[0]
 
     def __bool__(self) -> bool:
@@ -150,18 +211,18 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
         EXAMPLES::
 
-            sage: P = Poset((divisors(15), attrcall("divides")), facade=True)
-            sage: bool(P)
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
+            sage: bool(D)
             True
-            sage: P = Poset()
-            sage: bool(P)
+            sage: D0 = DoublePoset([], [], elements=[])
+            sage: bool(D0)
             False
         """
         return bool(self._elements)
 
     def __contains__(self, x) -> bool:
         r"""
-        Return ``True`` if ``x`` is an element of the poset.
+        Return ``True`` if ``x`` is an element of the double poset.
 
         TESTS::
 
@@ -693,7 +754,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 # In[31]:
 
 
-E.graph(F, {1:3, 2:4}).poset(1).cover_relations()
+# E.graph(F, {1:3, 2:4}).poset(1).cover_relations()
 
 
 def internal_product_helper(D1, D2):
