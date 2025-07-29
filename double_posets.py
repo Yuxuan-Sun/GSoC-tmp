@@ -2,9 +2,12 @@
 # coding: utf-8
 
 r"""
-Double posets
+# Finite double posets
 
-Notation used in the definitions follows mainly [Mac1995]_.
+This class implements finite double posets, i.e., finite sets
+equipped with two (unrelated) partial orders.
+
+Notation used in the definitions follows mainly [MalReu95]_.
 
 REFERENCES:
 
@@ -24,23 +27,67 @@ from sage.structure.element import Element
 
 def DoublePoset(P1, P2, elements=None, category=None):
     r"""
-    Construct a finite poset from various forms of input data.
+    Construct a finite double poset from various forms of
+    input data.
 
     INPUT:
 
     - ``P1`` -- either a list of covering relations or a Sage ``Poset``
                 defining the first order `\leq_1`
     - ``P2`` -- likewise, defines the second order `\leq_2`
-    - ``elements`` -- (optional) ordered list of ground set elements; 
-                    If not provided, then take the ground set of ``rel1``
+    - ``elements`` -- (optional) ordered list of all elements
+                      of the ground set;
+                      by default, taken to be the ground set of ``P1``
 
     OUTPUT:
 
-    ``FiniteDoublePoset`` -- an instance of the :class:`FiniteDoublePoset` class.
+    ``FiniteDoublePoset`` -- an instance of the
+    :class:`FiniteDoublePoset` class.
 
     If ``category`` is specified, then the poset is created in this
     category instead of :class:`FiniteDoublePosets`.
+    
+    .. TODO::
+    
+        We don't have a category yet.
 
+    EXAMPLES::
+    
+        sage: D = DoublePoset(Poset([[1,2,3,4],[[1,2],[2,4],[1,3],[3,4]]]), Poset([[1,2,3,4],[[2,3]]]))
+        sage: D
+        Finite double poset containing 4 elements
+        sage: D.leq(2, 2, 3)   # 2 <=_2 3 is true
+        True
+        sage: D.leq(2, 1, 3)   # 1 <=_2 3 is false
+        False
+        sage: D.leq(1, 1, 4)   # 1 <=_1 4 is true
+        True
+        sage: D.leq(1, 2, 3)   # 2 <=_1 3 is false
+        False
+        sage: D.poset(1)
+        Finite poset containing 4 elements
+        sage: D.poset(1).relations()
+        [[1, 1], [1, 2], [1, 3], [1, 4], [2, 2], [2, 4], [3, 3], [3, 4], [4, 4]]
+        sage: D.poset(2)
+        Finite poset containing 4 elements
+        sage: D.poset(2).relations()
+        [[4, 4], [2, 2], [2, 3], [3, 3], [1, 1]]
+        sage: sorted(D.elements())
+        [1, 2, 3, 4]
+        sage: bool(D)
+        True
+
+    TESTS::
+    
+        sage: D = DoublePoset(Poset(), Poset())
+        sage: D
+        Finite double poset containing 0 elements
+        sage: D.elements()
+        set()
+        sage: D.poset(1)
+        Finite poset containing 0 elements
+        sage: bool(D)
+        False
     """
     if P1 not in FinitePosets:
         if elements is None:
@@ -56,7 +103,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
     A (finite) double poset.
 
     This means a finite set `E` equipped with two
-    partial orders `<_1` and `<_2`.
+    partial orders `\leq_1` and `\leq_2`.
     See [MalReu95]_.
 
     INPUT:
@@ -66,7 +113,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
     
     EXAMPLES::
     
-        sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
+        sage: D = FiniteDoublePoset([(1,2)], [(1,3)], elements=[1,2,3])
         sage: D.elements()
         {1, 2, 3}
         sage: D.leq(1, 1, 2)   # 1 <=_1 2
@@ -94,6 +141,10 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
     def __init__(self, P1, P2, category) -> None:
         r"""
+        .. TODO::
+        
+            Make ``self`` a parent, or drop the ``Parent``
+            class.
 
         TESTS::
 
@@ -141,8 +192,8 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         TESTS::
 
             sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3,4,5])
-            sage: D.elements()
-            {1, 2, 3, 4, 5}
+            sage: sorted(D.elements())
+            [1, 2, 3, 4, 5]
         """
         return set(self._P1)
 
@@ -151,6 +202,15 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
     size = __len__
 
     def __iter__(self):
+        r"""
+        Iterate over this double poset.
+
+        TESTS::
+
+            sage: D = DoublePoset([(1,2)], [(1,3)], elements=[1,2,3,4,5])
+            sage: sorted([i for i in D])
+            [1, 2, 3, 4, 5]
+        """
         return self._P1.__iter__()
 
     def __getitem__(self, i):
@@ -180,22 +240,11 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         """
         return self._P1.__list__()
 
-    @lazy_attribute
-    def _list(self):
-        """
-        The list of the elements of ``self``, each wrapped to have
-        ``self`` as parent
-        
-        DOES NOT WORK.
-        """
-        return tuple(self.element_class(element)
-                     for element in self.elements())
-
     Element = Element
     
     def an_element(self):
         r'''
-        Return an element of ``self``
+        Return an element of ``self``.
 
         TESTS::
 
@@ -246,27 +295,69 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
     is_parent_of = __contains__
 
     def poset(self, i):
+        r"""
+        Return the underlying set of ``self``,
+        equipped with the first order `\leq_1` if
+        ``i = 1`` and with the second order `\leq_2`
+        if ``i = 2``.
+        
+        EXAMPLES::
+        
+            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]), Poset([[1,2],[]]))
+            sage: D.poset(1).relations()
+            [[1, 1], [1, 2], [2, 2]]
+            sage: D.poset(2).relations()
+            [[2, 2], [1, 1]]
+        """
         if i == 1:
             return self._P1
         else:
             return self._P2
 
     def is_lequal(self, i, a, b):
+        r"""
+        Check if `a \leq_i b`, where `a` and `b`
+        are two elements of ``self``, and where
+        `i` is either 1 or 2.
+        
+        EXAMPLES::
+        
+            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]), Poset([[1,2],[]]))
+            sage: D.is_lequal(1, 1, 2)
+            True
+            sage: D.is_lequal(1, 1, 1)
+            True
+            sage: D.is_lequal(1, 2, 1)
+            False
+            sage: D.is_lequal(2, 1, 2)
+            False
+            sage: D.is_lequal(2, 1, 1)
+            True
+        """
         return self.poset(i).is_lequal(a, b)
 
     leq = is_lequal
 
     def is_less_than(self, i, a, b):
+        r"""
+        TODO
+        """
         return self.poset(i).is_less_than(a, b)
 
     lt = is_less_than
 
     def is_gequal(self, i, a, b):
+        r"""
+        TODO
+        """
         return self.poset(i).is_gequal(a, b)
 
     geq = is_gequal
 
     def is_greater_than(self, i, a, b):
+        r"""
+        TODO
+        """
         return self.poset(i).is_greater_than(a, b)
 
     gt = is_greater_than
@@ -278,6 +369,21 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
         See :meth:`FinitePoset.relabel` for the
         allowed syntax.
+        
+        EXAMPLES::
+        
+            sage: D = DoublePoset(Poset([[3,5,7], [[5,7], [7,3]]]), Poset([[3,5,7], [[3,5]]]))
+            sage: D.poset(1).cover_relations()
+            [[5, 7], [7, 3]]
+            sage: D.poset(2).cover_relations()
+            [[3, 5]]
+            sage: E = D.relabel(relabeling=lambda x: x + 1)
+            sage: sorted(E.elements())
+            [4, 6, 8]
+            sage: E.poset(1).cover_relations()
+            [[6, 8], [8, 4]]
+            sage: E.poset(2).cover_relations()
+            [[4, 6]]
         """
         Q1 = self._P1.relabel(relabeling=relabeling)
         Q2 = self._P2.relabel(relabeling=relabeling)
@@ -286,8 +392,24 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
     def standardization(self):
         r"""
-        Relabel ``self`` by `1,2,...,n` preserving the
-        natural order of the elements of ``self``.
+        Relabel ``self`` so that the elements of
+        ``self`` (in their Python order) become
+        `1, 2, \ldots, n`.
+
+        EXAMPLES::
+        
+            sage: D = DoublePoset(Poset([[3,5,7], [[5,7], [7,3]]]), Poset([[3,5,7], [[3,5]]]))
+            sage: D.poset(1).cover_relations()
+            [[5, 7], [7, 3]]
+            sage: D.poset(2).cover_relations()
+            [[3, 5]]
+            sage: E = D.standardization()
+            sage: sorted(E.elements())
+            [1, 2, 3]
+            sage: E.poset(1).cover_relations()
+            [[2, 3], [3, 1]]
+            sage: E.poset(2).cover_relations()
+            [[1, 2]]
         """
         els = sorted(self.elements())
         standardize = {elsi: i+1 for (i, elsi) in enumerate(els)}
@@ -391,7 +513,9 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
     def decompositions_iter(self):
         """
         Iterate over all decompositions of this double poset
-        as pairs of double posets
+        as pairs of double posets.
+        
+        See :meth:`decompositions`.
         """
         P1 = self.poset(1)
         P2 = self.poset(2)
@@ -441,6 +565,16 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
             [1] | [2, 3]
             [1, 2] | [3]
             [1, 2, 3] | []
+
+            sage: D = DoublePoset([(1,2),(1,3)], [(1,3)], elements=[1,2,3])
+            sage: decs = D.decompositions()
+            sage: for I, S in decs:
+            ....:     print(sorted(I.elements()), "|", sorted(S.elements()))
+            [] | [1, 2, 3]
+            [1] | [2, 3]
+            [1, 2] | [3]
+            [1, 3] | [2]
+            [1, 2, 3] | []
         """
         return list(self.decompositions_iter())
 
@@ -449,6 +583,18 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         Return the flipped version of the double poset
         ``self``. This is obtained from ``self`` by
         switching the roles of first and second order.
+        
+        EXAMPLES::
+        
+            sage: D = DoublePoset([(1,2),(2,3)], [(1,3)], elements=[1,2,3])
+            sage: D.flip()
+            Finite double poset containing 3 elements
+            sage: D.flip().poset(1).relations()
+            [[2, 2], [1, 1], [1, 3], [3, 3]]
+            sage: D.flip().poset(2).relations()
+            [[1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]]
+            sage: D.flip().flip() == D
+            True
         """
         return FiniteDoublePoset(self._P2,
                                  self._P1)
@@ -458,7 +604,9 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         Iterate over the pictures `\phi` from the double
         poset ``self`` to another double poset ``other``.
         The pictures are encoded as dictionaries
-        `\{e: \phi(e)}`.
+        `\{e: \phi(e)\}`.
+        
+        See :meth:`pictures`.
         """
         D1 = self
         D2 = other
@@ -499,7 +647,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         Return a list of all pictures `\phi` from the double
         poset ``self`` to another double poset ``other``.
         The pictures are encoded as dictionaries
-        `\{e: \phi(e)}`.
+        `\{e: \phi(e)\}`.
 
         A **picture** from a double poset `(E, \leq_1, \leq_2)` to
         `(F, \leq_1, \leq_2)` is a bijection `\phi: E \to F` such that:
@@ -541,6 +689,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         double poset ``self`` to another double poset ``other``.
 
         EXAMPLES::
+        
             sage: E = DoublePoset([(1,2)], [(1,2), (2,3)], elements=[1,2,3])
             sage: F = DoublePoset([(4,5), (5,6)], [(4,6)], elements=[4,5,6])
             sage: E.number_of_pictures(F)
@@ -557,7 +706,9 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         Iterate over the isomorphisms `\phi` from the double
         poset ``self`` to another double poset ``other``.
         The isomorphisms are encoded as dictionaries
-        `\{e: \phi(e)}`.
+        `\{e: \phi(e)\}`.
+        
+        See :meth:`isomorphisms`.
         """
         D1 = self
         D2 = other
@@ -597,7 +748,7 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         Return a list of all isomorphisms `\phi` from the double
         poset ``self`` to another double poset ``other``.
         The isomorphisms are encoded as dictionaries
-        `\{e: \phi(e)}`.
+        `\{e: \phi(e)\}`.
 
         An **isomorphism** between two double posets 
         `(E, \leq_1, \leq_2)` and `(F, \leq_1, \leq_2)` is a bijection
@@ -638,6 +789,10 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         r"""
         Return the number of all isomorphisms `\phi` from the
         double poset ``self`` to another double poset ``other``.
+        
+        EXAMPLES::
+        
+            TODO.
         """
         return sum(1 for _ in self.isomorphisms_iter(other))
 
@@ -696,15 +851,19 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
         
     def pi_partitions(self, bound):
         r"""
-        Return a list of all `\pi`-partitions x: E -> {1, ..., bound} for this double poset.
+        Return a list of all `\pi`-partitions
+        `x : E \to \{1, ..., b\}` for this double poset,
+        where `b` is the integer ``bound``.
         
         The `\pi`-partitions are encoded as dictionaries.
 
-        EXAMPLES:
+        EXAMPLES::
+        
             sage: D = DoublePoset([(1,2)], [(2,1)], elements=[1,2])
             sage: D.pi_partitions(3)
             [{1: 1, 2: 2}, {1: 1, 2: 3}, {1: 2, 2: 3}]
     
+            TODO: More examples.
         """
         return list(self.pi_partitions_iter(bound))
 
@@ -719,6 +878,9 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
         The bijection phi should be given as a
         dictionary `\{e: \phi(e)\}`.
+        
+        TODO: Examples.
+        # E.graph(F, {1:3, 2:4}).poset(1).cover_relations()
         """
         D1 = self
         D2 = other
@@ -747,14 +909,6 @@ class FiniteDoublePoset(Parent, UniqueRepresentation):
 
 
 
-# In[29]:
-
-
-
-# In[31]:
-
-
-# E.graph(F, {1:3, 2:4}).poset(1).cover_relations()
 
 
 def internal_product_helper(D1, D2):
@@ -802,13 +956,53 @@ def DiagramDoublePoset(D, partition=False):
 
     The diagram `D` can be provided as an
     iterable consisting of pairs `(i, j)`, or,
-    if a skew Young diagram is desired, as abs
+    if a skew Young diagram is desired, as a
     skew partition (:class:`SkewPartition`).
     In the latter case, the optional parameter
     ``partition`` must be set to ``True``.
+    
+    EXAMPLES::
+    
+        sage: D = DiagramDoublePoset([[3,3],[1]], partition=True)
+        sage: D
+        Finite double poset containing 5 elements
+        sage: sorted(D.elements())
+        [(0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
+        sage: D.poset(1).cover_relations()
+        [[(1, 0), (1, 1)],
+         [(0, 1), (0, 2)],
+         [(0, 1), (1, 1)],
+         [(0, 2), (1, 2)],
+         [(1, 1), (1, 2)]]
+        sage: D.poset(2).cover_relations()
+        [[(0, 2), (1, 2)],
+         [(0, 2), (0, 1)],
+         [(1, 2), (1, 1)],
+         [(0, 1), (1, 1)],
+         [(1, 1), (1, 0)]]
+         
+    We check the result from [MalReu95]_ that the
+    number of pictures between the double posets of
+    two skew Young diagrams is the corresponding
+    Littlewood–Richardson coefficient (i.e., Hall
+    inner product of the respective skew Schur
+    functions)::
+    
+        sage: def num_pics(lam, mu):
+        ....:     Dlam = DiagramDoublePoset(lam, partition=True)
+        ....:     Dmu = DiagramDoublePoset(mu, partition=True)
+        ....:     return Dlam.number_of_pictures(Dmu)
+        sage: def lrcoeff(lam, mu):
+        ....:     Sym = SymmetricFunctions(QQ)
+        ....:     s = Sym.s()
+        ....:     return s(lam).scalar(s(mu))
+        sage: all(num_pics(lam, mu) == lrcoeff(lam, mu)
+        ....:        for lam in SkewPartitions(4)
+        ....:        for mu in SkewPartitions(4)) # long time
+        True
     """
     if partition:
-        cells = D.cells()
+        cells = SkewPartition(D).cells()
     else:
         cells = list(set(D))
     rel1 = [(c, d) for c in cells for d in cells
