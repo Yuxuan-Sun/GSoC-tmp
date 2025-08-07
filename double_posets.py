@@ -307,7 +307,21 @@ class DoublePoset(Parent, UniqueRepresentation):
 
     def is_less_than(self, i, a, b):
         r"""
-        TODO
+        Check if `a <_i b`, where `a` and `b` are two elements
+        of ``self``, and `i` is either 1 or 2, referring to
+        the `i`-th partial order.
+
+        EXAMPLES::
+
+            sage: D = DoublePoset(Poset([[1, 2], [[1, 2]]]), Poset([[1, 2], []]))
+            sage: D.is_less_than(1, 1, 2)
+            True
+            sage: D.is_less_than(1, 1, 1)
+            False
+            sage: D.is_less_than(2, 1, 2)
+            False
+            sage: D.is_less_than(2, 2, 2)
+            False
         """
         return self.poset(i).is_less_than(a, b)
 
@@ -315,7 +329,22 @@ class DoublePoset(Parent, UniqueRepresentation):
 
     def is_gequal(self, i, a, b):
         r"""
-        TODO
+        Check if `a \geq_i b`, where `a` and `b` are two elements
+        of ``self``, and `i` is either 1 or 2, referring to
+        the `i`-th partial order.
+
+
+        EXAMPLES::
+
+            sage: D = DoublePoset(Poset([[1, 2], [[1, 2]]]), Poset([[1, 2], []]))
+            sage: D.is_gequal(1, 2, 1)
+            False
+            sage: D.is_gequal(1, 2, 2)
+            True
+            sage: D.is_gequal(1, 2, 1)
+            False
+            sage: D.is_gequal(2, 1, 1)
+            True
         """
         return self.poset(i).is_gequal(a, b)
 
@@ -323,7 +352,19 @@ class DoublePoset(Parent, UniqueRepresentation):
 
     def is_greater_than(self, i, a, b):
         r"""
-        TODO
+        Check if `a >_i b`, where `a` and `b` are two elements
+        of ``self``, and `i` is either 1 or 2, referring to
+        the `i`-th partial order.
+
+        EXAMPLES::
+
+            sage: D = DoublePoset(Poset([[1, 2], [[1, 2]]]), Poset([[1, 2], []]))
+            sage: D.is_greater_than(1, 2, 1)
+            True
+            sage: D.is_greater_than(1, 1, 1)
+            False
+            sage: D.is_greater_than(2, 1, 2)
+            False
         """
         return self.poset(i).is_greater_than(a, b)
 
@@ -775,7 +816,34 @@ class DoublePoset(Parent, UniqueRepresentation):
 
         EXAMPLES::
 
-            TODO.
+            sage: P1 = Poset(([1, 2], [[1, 2]]))
+            sage: P2 = Poset(([1, 2], []))
+            sage: Q1 = Poset(([3, 4], []))
+            sage: Q2 = Poset(([3, 4], [[3, 4]]))
+            sage: D1 = DoublePoset(P1, P2)
+            sage: D2 = DoublePoset(Q1, Q2)
+            sage: D1.number_of_isomorphisms(D2)
+            0
+
+            sage: B = posets.BooleanLattice(2)
+            sage: D = DoublePoset(B, B)
+            sage: D.number_of_isomorphisms(D)
+            2
+
+            sage: E = Poset(([1,2,3], []))
+            sage: D1 = DoublePoset(E, E)
+            sage: D1.number_of_isomorphisms(D1)
+            6
+
+            sage: P = Poset(([1,2,3], [[1,2],[2,3]]))
+            sage: D2 = DoublePoset(P, P)
+            sage: D2.number_of_isomorphisms(D2)
+            1
+
+            sage: D = DoublePoset(P, E)
+            sage: D.number_of_isomorphisms(D)
+            1
+
         """
         return sum(1 for _ in self.isomorphisms_iter(other))
 
@@ -843,10 +911,36 @@ class DoublePoset(Parent, UniqueRepresentation):
         EXAMPLES::
 
             sage: D = DoublePoset([(1,2)], [(2,1)], elements=[1,2])
+            sage: D.pi_partitions(2)
+            [{1: 1, 2: 2}]
+
+            sage: D = DoublePoset([(1,2)], [(2,1)], elements=[1,2])
             sage: D.pi_partitions(3)
             [{1: 1, 2: 2}, {1: 1, 2: 3}, {1: 2, 2: 3}]
 
-            TODO: More examples.
+            sage: D = DoublePoset([], [(1, 2)], elements=[1, 2])
+            sage: D.pi_partitions(2)
+            [{2: 1, 1: 1}, {2: 1, 1: 2}, {2: 2, 1: 1}, {2: 2, 1: 2}]
+
+            sage: D = DoublePoset([(1, 2), (2, 3)], [(1, 3)], elements=[1, 2, 3])
+            sage: len(D.pi_partitions(3))
+            10
+            sage: D.pi_partitions(3)         
+            [{1: 1, 2: 1, 3: 1},
+            {1: 1, 2: 1, 3: 2},
+            {1: 1, 2: 1, 3: 3},
+            {1: 1, 2: 2, 3: 2},
+            {1: 1, 2: 2, 3: 3},
+            {1: 1, 2: 3, 3: 3},
+            {1: 2, 2: 2, 3: 2},
+            {1: 2, 2: 2, 3: 3},
+            {1: 2, 2: 3, 3: 3},
+            {1: 3, 2: 3, 3: 3}]
+
+            sage: D = DoublePoset([(1,2), (2,3), (1,4)], [(1,3), (3,4)], elements=[1,2,3,4])
+            sage: len(D.pi_partitions(4))
+            65
+
         """
         return list(self.pi_partitions_iter(bound))
 
@@ -862,8 +956,33 @@ class DoublePoset(Parent, UniqueRepresentation):
         The bijection phi should be given as a
         dictionary `\{e: \phi(e)\}`.
 
-        TODO: Examples.
-        # E.graph(F, {1:3, 2:4}).poset(1).cover_relations()
+        EXAMPLES::
+
+            sage: E = DoublePoset([(1,2)], [(1,2)], elements=[1,2])
+            sage: F = DoublePoset([(3,4)], [(3,4)], elements=[3,4])
+            sage: G = E.graph(F, {1:3, 2:4})
+            sage: G.elements()
+            {(1, 3), (2, 4)}
+            sage: G.poset(1).cover_relations()
+            [[(1, 3), (2, 4)]]
+            sage: G.poset(2).cover_relations()
+            [[(1, 3), (2, 4)]]
+            sage: G2 = E.graph(F, {1:4, 2:3})
+            sage: G2.poset(1).cover_relations()
+            [[(2, 3), (1, 4)]]
+            sage: G2.poset(2).cover_relations()
+            [[(1, 4), (2, 3)]]
+
+            sage: D1 = DoublePoset([(1,2), (1,3), (2,4), (3,4)], [(1,3), (2,3)], elements=[1,2,3,4])
+            sage: D2 = DoublePoset([(5,6), (6,7), (7,8)], [(5,7), (6,8)], elements=[5,6,7,8])
+            sage: phi = {1:6, 2:5, 3:8, 4:7}
+            sage: G = D1.graph(D2, phi)
+            sage: G.elements()
+            {(1, 6), (2, 5), (3, 8), (4, 7)}
+            sage: G.poset(1).cover_relations()
+            [[(2, 5), (1, 6)], [(1, 6), (4, 7)], [(4, 7), (3, 8)]]
+            sage: G.poset(2).cover_relations()
+            [[(2, 5), (3, 8)], [(1, 6), (3, 8)]]
         """
         D1 = self
         D2 = other
