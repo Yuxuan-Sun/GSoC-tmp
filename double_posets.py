@@ -1009,6 +1009,64 @@ class DoublePoset(Parent, UniqueRepresentation):
 
         return D_phi
 
+def is_total_order(poset):
+    """
+    Check whether the input poset is in total order.
+
+    EXAMPLES::
+
+        sage: P = Poset(([1,2,3], [(1,2), (2,3)]))
+        sage: is_total_order(P)
+        True
+
+        sage: Q = Poset(([1,2,3], [(1,2)]))
+        sage: is_total_order(Q)
+        False
+    """
+    elements = list(poset)
+    for i in range(len(elements)):
+        for j in range(i + 1, len(elements)):
+            a = elements[i]
+            b = elements[j]
+            if not (poset.is_lequal(a, b) or poset.is_lequal(b, a)):
+                return False
+    return True
+
+
+class SpecialDoublePoset(DoublePoset):
+    r"""
+    A special double poset is a double poset `(E, \leq_1, \leq_2)` 
+    where the second order `\leq_2` is a total order.
+
+    EXAMPLES::
+
+        sage: P1 = Poset(([1, 2, 3], [(1,2)]))
+        sage: P2 = Poset(([1, 2, 3], [(1,2), (2,3)]))  # total order
+        sage: SD = SpecialDoublePoset(P1, P2)
+        sage: SD
+        Special double poset containing 3 elements
+        sage: SD.poset(2).is_total_order()
+        True
+
+        sage: P2 = Poset(([1, 2, 3], [(1,2)]))  # not total
+        sage: SpecialDoublePoset(P1, P2)
+        Traceback (most recent call last):
+        ...
+        ValueError: The second order must be a total order.
+    """
+    @staticmethod
+    def __classcall__(cls, P1, P2, elements=None, category=None):
+        
+        D = super(SpecialDoublePoset, cls).__classcall__(cls, P1, P2, elements=elements, category=category)
+
+        
+        if not is_total_order(D._P2):
+            raise ValueError("The second order must be a total order.")
+        return D
+
+    def _repr_(self):
+        return "Special double poset containing " + str(len(self)) + " elements"
+
 
 
 
