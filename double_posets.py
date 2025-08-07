@@ -1,3 +1,5 @@
+# POSET FILE
+
 #!/usr/bin/env python
 # coding: utf-8
 
@@ -9,6 +11,10 @@ equipped with two (unrelated) partial orders.
 
 Notation used in the definitions follows mainly [MalReu95]_.
 
+AUTHORS:
+
+- Yuxuan Sun and Darij Grinberg (2025-08-07): first implementation
+
 REFERENCES:
 
 .. [MalReu95] \Claudia Malvenuto, Christophe Reutenauer, *A self paired Hopf algebra on double posets and a Littlewood–Richardson rule*, Journal of Combinatorial Theory, Series A
@@ -16,14 +22,21 @@ Volume 118, Issue 4, May 2011, pp. 1322--1333, https://doi.org/10.1016/j.jcta.20
 
 """
 
-from sage.categories.hopf_algebras import HopfAlgebras
-from sage.combinat.posets.posets import FinitePoset
-from sage.combinat.skew_partition import SkewPartitions
-from sage.combinat.partition import Partitions
+# ****************************************************************************
+#       Copyright (C) 2025 Yuxuan Sun <sun00816 at umn.edu>,
+#                          Darij Grinberg <darijgrinberg at gmail.com>
+#
+#  Distributed under the terms of the GNU General Public License (GPL)
+#  as published by the Free Software Foundation; either version 2 of
+#  the License, or (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
+
+from sage.structure.parent import Parent
+from sage.structure.unique_representation import UniqueRepresentation
 from sage.categories.finite_posets import FinitePosets
-from sage.combinat.posets.elements import PosetElement
+from sage.combinat.posets.posets import Poset
 from itertools import permutations, product
-from sage.structure.element import Element
 
 class DoublePoset(Parent, UniqueRepresentation):
     r"""
@@ -34,10 +47,10 @@ class DoublePoset(Parent, UniqueRepresentation):
     See [MalReu95]_.
 
     INPUT:
-    - ``P1`` -- either a list of covering relations or a Sage ``Poset``
-                defining the first order `\leq_1`
+    - ``P1`` -- either a list of covering relations or a Sage
+                :class:`Poset` defining the first order `\leq_1`
     - ``P2`` -- likewise, defines the second order `\leq_2`
-    - ``elements`` -- (optional) ordered list of all elements
+    - ``elements`` -- (optional) list/tuple/set of all elements
                       of the ground set;
                       by default, taken to be the ground set of ``P1``
 
@@ -49,13 +62,11 @@ class DoublePoset(Parent, UniqueRepresentation):
     If ``category`` is specified, then the poset is created in this
     category instead of :class:`DoublePosets`.
 
-    .. TODO::
-
-        We don't have a category yet.
-
     EXAMPLES::
 
-        sage: D = DoublePoset(Poset([[1,2,3,4],[[1,2],[2,4],[1,3],[3,4]]]), Poset([[1,2,3,4],[[2,3]]]))
+        sage: D = DoublePoset(Poset([[1,2,3,4],
+        ....:                       [[1,2],[2,4],[1,3],[3,4]]]),
+        ....:                       Poset([[1,2,3,4],[[2,3]]]))
         sage: D
         Finite double poset containing 4 elements
         sage: D.leq(2, 2, 3)   # 2 <=_2 3 is true
@@ -87,9 +98,9 @@ class DoublePoset(Parent, UniqueRepresentation):
         sage: D.leq(2, 1, 3)   # 1 <=_2 3
         True
         sage: D.poset(1).cover_relations()
-        [(1, 2)]
+        [[1, 2]]
         sage: D.poset(2).cover_relations()
-        [(1, 3)]
+        [[1, 3]]
 
     TESTS::
 
@@ -102,6 +113,13 @@ class DoublePoset(Parent, UniqueRepresentation):
         Finite poset containing 0 elements
         sage: bool(D)
         False
+
+        sage: D = DoublePoset([(1,2)], [(1,3)], elements={1,2,3})
+        sage: D.elements()
+        {1, 2, 3}
+        sage: D = DoublePoset([(1,2)], [(1,3)], elements=(3,1,2,1))
+        sage: D.elements()
+        {1, 2, 3}
 
     """
     @staticmethod
@@ -130,7 +148,9 @@ class DoublePoset(Parent, UniqueRepresentation):
 
         TESTS::
 
-            sage: D = DoublePoset(Poset([[1,2,3,4],[[1,2],[2,4],[1,3],[3,4]]]), Poset([[1,2,3,4],[[2,3]]]))
+            sage: D = DoublePoset(Poset([[1,2,3,4],
+            ....:                       [[1,2],[2,4],[1,3],[3,4]]]),
+            ....:                       Poset([[1,2,3,4],[[2,3]]]))
             sage: TestSuite(D).run()
 
         See also the extensive tests in the class documentation.
@@ -138,7 +158,7 @@ class DoublePoset(Parent, UniqueRepresentation):
         Parent.__init__(self, category=category, facade=True)
         self._P1 = P1
         self._P2 = P2
-        self._elements = list(P1)
+        self._elements = tuple(P1)
 
     def _repr_(self) -> str:
         r"""
@@ -178,7 +198,7 @@ class DoublePoset(Parent, UniqueRepresentation):
             sage: sorted(D.elements())
             [1, 2, 3, 4, 5]
         """
-        return set(self._P1)
+        return set(self._elements)
 
     base_set = elements
     base_set_cardinality = __len__
@@ -223,7 +243,8 @@ class DoublePoset(Parent, UniqueRepresentation):
 
     def __bool__(self) -> bool:
         r"""
-        Return if ``self`` is empty or not.
+        Return ``True`` if ``self`` is nonempty,
+        ``False`` otherwise.
 
         EXAMPLES::
 
@@ -270,11 +291,14 @@ class DoublePoset(Parent, UniqueRepresentation):
 
         EXAMPLES::
 
-            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]), Poset([[1,2],[]]))
+            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]),
+            ....:                 Poset([[1,2],[]]))
             sage: D.poset(1).relations()
             [[1, 1], [1, 2], [2, 2]]
             sage: D.poset(2).relations()
             [[2, 2], [1, 1]]
+            sage: sorted(D.poset(2))
+            [1, 2]
         """
         if i == 1:
             return self._P1
@@ -289,7 +313,8 @@ class DoublePoset(Parent, UniqueRepresentation):
 
         EXAMPLES::
 
-            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]), Poset([[1,2],[]]))
+            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]),
+            ....:                 Poset([[1,2],[]]))
             sage: D.is_lequal(1, 1, 2)
             True
             sage: D.is_lequal(1, 1, 1)
@@ -313,7 +338,8 @@ class DoublePoset(Parent, UniqueRepresentation):
 
         EXAMPLES::
 
-            sage: D = DoublePoset(Poset([[1, 2], [[1, 2]]]), Poset([[1, 2], []]))
+            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]),
+            ....:                 Poset([[1,2],[]]))
             sage: D.is_less_than(1, 1, 2)
             True
             sage: D.is_less_than(1, 1, 1)
@@ -333,15 +359,15 @@ class DoublePoset(Parent, UniqueRepresentation):
         of ``self``, and `i` is either 1 or 2, referring to
         the `i`-th partial order.
 
-
         EXAMPLES::
 
-            sage: D = DoublePoset(Poset([[1, 2], [[1, 2]]]), Poset([[1, 2], []]))
+            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]),
+            ....:                 Poset([[1,2],[]]))
             sage: D.is_gequal(1, 2, 1)
-            False
+            True
             sage: D.is_gequal(1, 2, 2)
             True
-            sage: D.is_gequal(1, 2, 1)
+            sage: D.is_gequal(2, 2, 1)
             False
             sage: D.is_gequal(2, 1, 1)
             True
@@ -358,7 +384,8 @@ class DoublePoset(Parent, UniqueRepresentation):
 
         EXAMPLES::
 
-            sage: D = DoublePoset(Poset([[1, 2], [[1, 2]]]), Poset([[1, 2], []]))
+            sage: D = DoublePoset(Poset([[1,2],[[1,2]]]),
+            ....:                 Poset([[1,2],[]]))
             sage: D.is_greater_than(1, 2, 1)
             True
             sage: D.is_greater_than(1, 1, 1)
@@ -375,12 +402,17 @@ class DoublePoset(Parent, UniqueRepresentation):
         Relabel ``self`` using the relabeling
         function/dictionary ``relabeling``.
 
+        The result is a double poset isomorphic to
+        ``self``. Each element ``e`` of ``self`` is
+        replaced by ``relabelling[e]``.
+
         See :meth:`FinitePoset.relabel` for the
         allowed syntax.
 
         EXAMPLES::
 
-            sage: D = DoublePoset(Poset([[3,5,7], [[5,7], [7,3]]]), Poset([[3,5,7], [[3,5]]]))
+            sage: D = DoublePoset(Poset([[3,5,7], [[5,7], [7,3]]]),
+            ....:                 Poset([[3,5,7], [[3,5]]]))
             sage: D.poset(1).cover_relations()
             [[5, 7], [7, 3]]
             sage: D.poset(2).cover_relations()
@@ -398,15 +430,21 @@ class DoublePoset(Parent, UniqueRepresentation):
         elementsQ = list(Q1)
         return DoublePoset(Q1, Q2)
 
-    def standardization(self):
+    def standardization(self, offset=1):
         r"""
         Relabel ``self`` so that the elements of
         ``self`` (in their Python order) become
         `1, 2, \ldots, n`.
 
+        If the optional parameter ``offset`` is set
+        to some integer `k`, then the elements are
+        relabelled as `k, k+1, \ldots, k+n-1`
+        instead.
+
         EXAMPLES::
 
-            sage: D = DoublePoset(Poset([[3,5,7], [[5,7], [7,3]]]), Poset([[3,5,7], [[3,5]]]))
+            sage: D = DoublePoset(Poset([[3,5,7], [[5,7], [7,3]]]),
+            ....:                 Poset([[3,5,7], [[3,5]]]))
             sage: D.poset(1).cover_relations()
             [[5, 7], [7, 3]]
             sage: D.poset(2).cover_relations()
@@ -418,9 +456,19 @@ class DoublePoset(Parent, UniqueRepresentation):
             [[2, 3], [3, 1]]
             sage: E.poset(2).cover_relations()
             [[1, 2]]
+
+        Standardization with an offset::
+
+            sage: E = D.standardization(offset=5)
+            sage: sorted(E.elements())
+            [5, 6, 7]
+            sage: E.poset(1).cover_relations()
+            [[6, 7], [7, 5]]
+            sage: E.poset(2).cover_relations()
+            [[5, 6]]
         """
         els = sorted(self.elements())
-        standardize = {elsi: i+1 for (i, elsi) in enumerate(els)}
+        standardize = {elsi: i+offset for (i, elsi) in enumerate(els)}
         return self.relabel(relabeling=standardize)
 
     # To multiply two basis elements x and y in the
@@ -434,33 +482,40 @@ class DoublePoset(Parent, UniqueRepresentation):
         Return the composition of two double posets as
         defined in [MalReu95]_.
 
-        This requires the ground sets to be disjoint.
-        Unless the ``relabel`` parameter is set to
-        ``True``, in which case each element `x` of
-        ``self`` is relabelled as ``(1, x)`` whereas
-        each element ``y`` of ``other`` is relabelled
-        as ``(2, y)``.
+        By default, this requires their ground sets
+        to be disjoint.
+        However, if the ``relabel`` parameter is set to
+        ``True``, then each element `x` of ``self`` is
+        relabelled as ``(1, x)`` whereas each element
+        ``y`` of ``other`` is relabelled as ``(2, y)``;
+        thus, the original ground sets need not be
+        disjoint.
 
         Let ``self`` `= (E, <_1, <_2)` and
         ``other`` `= (F, <_1, <_2)`.
         The composition is a new double poset
         `EF = (E \cup F, <_1', <_2')` where:
-        - `<_1'` is the disjoint union of the first orders of `E` and `F`;
-        - `<_2'` is the ordinal sum: it contains all of second orders of `E` and `F`,
-            and for every `e \in E` and `f \in F`, we set `e <_2' f`.
+        - `<_1'` is the disjoint union of the first
+          orders of `E` and `F`;
+        - `<_2'` is the ordinal sum: it contains all
+          of the second orders of `E` and `F`, and
+          for every `e \in E` and `f \in F`, we set
+          `e <_2' f`.
 
         INPUT:
 
-        - ``other`` -- another ``DoublePoset`` to compose with ``self``;
+        - ``other`` -- another ``DoublePoset`` to
+          compose with ``self``;
         - ``relabel`` (boolean, default: ``False``) --
-        if ``True``, then each element `x` of
-        ``self`` is relabelled as ``(1, x)`` whereas
-        each element ``y`` of ``other`` is relabelled
-        as ``(2, y)``.
+          if ``True``, then each element `x` of
+          ``self`` is relabelled as ``(1, x)`` whereas
+          each element ``y`` of ``other`` is relabelled
+          as ``(2, y)``.
 
         OUTPUT:
 
-        - A new ``DoublePoset`` representing the composition of ``self`` and ``other``.
+        - A new ``DoublePoset`` representing the
+          composition of ``self`` and ``other``.
 
         EXAMPLES::
 
@@ -489,6 +544,15 @@ class DoublePoset(Parent, UniqueRepresentation):
             [[(1, 1), (2, 1)], [(1, 2), (1, 3)], [(1, 3), (2, 1)],
             [(2, 1), (2, 2)], [(2, 1), (2, 3)]]
 
+        TESTS::
+
+            sage: D1 = DoublePoset(Poset([[1,2], [[1,2]]]), Poset([[1,2],[]]))
+            sage: D2 = DoublePoset(Poset([[2,3], [[2,3]]]), Poset([[2,3],[]]))
+            sage: D1.compose(D2)
+            Traceback (most recent call last):
+            ...
+            ValueError: Double posets must be disjoint for doing composition
+
         """
         if relabel:
             E = self.relabel(relabeling=lambda x: (1, x))
@@ -505,21 +569,19 @@ class DoublePoset(Parent, UniqueRepresentation):
         # check: disjoint ground sets
         EF_elements = list(E1) + list(F1)
         if len(set(EF_elements)) != len(EF_elements):
-            raise ValueError("Double posets must be disjoint for doing compsition")
+            raise ValueError("Double posets must be disjoint for doing composition")
 
         # First order: disjoint union
         rel1 = list(E1.cover_relations()) + list(F1.cover_relations())
 
         # Second order: ordinal sum
-        rel2 = list(E2.cover_relations()) + list(F2.cover_relations())
-        for e in E2:
-            for f in F2:
-                rel2.append((e, f))
+        rel2 = list(E2.cover_relations()) + list(F2.cover_relations()) \
+               + [(e, f) for e in E2 for f in F2]
 
         return DoublePoset(rel1, rel2, elements=EF_elements)
 
     def decompositions_iter(self):
-        """
+        r"""
         Iterate over all decompositions of this double poset
         as pairs of double posets.
 
@@ -541,10 +603,10 @@ class DoublePoset(Parent, UniqueRepresentation):
 
             D_I = DoublePoset(P1_I.cover_relations(),
                               P2_I.cover_relations(),
-                              elements=list(I))
+                              elements=I)
             D_S = DoublePoset(P1_S.cover_relations(),
                               P2_S.cover_relations(),
-                              elements=list(S))
+                              elements=S)
             yield (D_I, D_S)
 
     def decompositions(self):
@@ -552,16 +614,21 @@ class DoublePoset(Parent, UniqueRepresentation):
         Return all decompositions of this double poset as
         pairs of double posets.
 
-        A decomposition of a double poset `(E, <_1, <_2)` is a pair `(I, S)` such that:
-          - `I` is an **inferior ideal** (order ideal) of the first order `<_1`;
+        A *decomposition* of a double poset
+        `(E, <_1, <_2)` is a pair `(I, S)` such that:
+          - `I` is an **inferior ideal** (order ideal)
+            of the first order `<_1`;
           - `S = E \setminus I` is its complement;
-          - both `I` and `S` inherit their orders `<_1` and `<_2` from `E`.
+          - both `I` and `S` inherit their orders
+            `<_1` and `<_2` from `E`.
 
-        This function returns all such decompositions, each as a pair of ``DoublePoset``s.
+        This function returns all such decompositions,
+        each as a pair of ``DoublePoset``s.
 
         OUTPUT:
 
-        - A list of pairs `(I, S)` where `I` and `S` are ``DoublePoset`` instances.
+        - A list of pairs `(I, S)` where `I` and `S`
+          are ``DoublePoset`` instances.
 
         EXAMPLES::
 
@@ -583,6 +650,14 @@ class DoublePoset(Parent, UniqueRepresentation):
             [1, 2] | [3]
             [1, 3] | [2]
             [1, 2, 3] | []
+            sage: for I, S in decs:
+            ....:     print(sorted(I.poset(1).relations()), "|",
+            ....:           sorted(I.poset(2).relations()))
+            [] | []
+            [[1, 1]] | [[1, 1]]
+            [[1, 1], [1, 2], [2, 2]] | [[1, 1], [2, 2]]
+            [[1, 1], [1, 3], [3, 3]] | [[1, 1], [1, 3], [3, 3]]
+            [[1, 1], [1, 2], [1, 3], [2, 2], [3, 3]] | [[1, 1], [1, 3], [2, 2], [3, 3]]
         """
         return list(self.decompositions_iter())
 
@@ -603,13 +678,12 @@ class DoublePoset(Parent, UniqueRepresentation):
             [[1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]]
             sage: D.flip().flip() == D
             True
-            sage: D.flip() == D
-            False
             sage: D.flip().flip() is D
             True
+            sage: D.flip() == D
+            False
         """
-        return DoublePoset(self._P2,
-                                 self._P1)
+        return DoublePoset(self._P2, self._P1)
 
     def pictures_iter(self, other):
         r"""
@@ -629,12 +703,11 @@ class DoublePoset(Parent, UniqueRepresentation):
             return
 
         n = len(E)
-        count = 0
 
-        # get all bijections
+        # get all bijections phi : E -> F
         for sigma in permutations(range(n)):
-            phi = {E[i]: F[sigma[i]] for i in range(n)}
-            phi_inv = {v: k for k, v in phi.items()}
+            phi = {Ei : F[sigma[i]] for (i, Ei) in enumerate(E)}
+            phi_inv = {F[sigma[i]] : Ei for (i, Ei) in enumerate(E)}
 
             # Forward: e <_1 e′ => phi(e) <_2 phi(e′)
             forward_fail = any(
@@ -645,7 +718,7 @@ class DoublePoset(Parent, UniqueRepresentation):
             if forward_fail:
                 continue
 
-            # Backward: f <_1 f′ => phi_invs(f) <_2 phi_invs(f′)
+            # Backward: f <_1 f′ => phi_inv(f) <_2 phi_inv(f′)
             backward_fail = any(
                 D2.leq(1, f1, f2) and not D1.leq(2, phi_inv[f1], phi_inv[f2])
                 for f1 in F for f2 in F if f1 != f2
@@ -661,19 +734,24 @@ class DoublePoset(Parent, UniqueRepresentation):
         The pictures are encoded as dictionaries
         `\{e: \phi(e)\}`.
 
-        A **picture** from a double poset `(E, \leq_1, \leq_2)` to
-        `(F, \leq_1, \leq_2)` is a bijection `\phi: E \to F` such that:
+        A **picture** from a double poset
+        `(E, \leq_1, \leq_2)` to a double poset
+        `(F, \leq_1, \leq_2)` is a bijection
+        `\phi: E \to F` such that:
 
-        - if `e \leq_1 e'` in ``self``, then `\phi(e) \leq_2 \phi(e')` in ``other``;
-        - if `f \leq_1 f'` in ``other``, then `\phi^{-1}(f) \leq_2 \phi^{-1}(f')` in ``self``.
+        - if `e \leq_1 e'` in `E`, then
+          `\phi(e) \leq_2 \phi(e')` in `F`;
+        - if `f \leq_1 f'` in `F`, then
+          `\phi^{-1}(f) \leq_2 \phi^{-1}(f')` in `E`.
 
         INPUT:
 
-        - ``other`` -- a second ``DoublePoset`` with the same number of elements.
+        - ``other`` -- a second ``DoublePoset``.
 
         OUTPUT:
 
-        - A list of bijections (Python dicts) representing all valid pictures
+        - A list of bijections (Python dicts)
+          representing all valid pictures
           from ``self`` to ``other``.
 
         EXAMPLES::
@@ -681,7 +759,9 @@ class DoublePoset(Parent, UniqueRepresentation):
             sage: E = DoublePoset([(1,2)], [(1,2)], elements=[1,2])
             sage: F = DoublePoset([(3,4)], [(3,4)], elements=[3,4])
             sage: E.pictures(F)
-            [{1: 3, 2: 4}, {1: 4, 2: 3}]
+            [{1: 3, 2: 4}]
+            sage: E.pictures(E)
+            [{1: 1, 2: 2}]
 
             sage: E = DoublePoset([(1,3), (2,3)], [(1,2), (2,3)], elements=[1,2,3])
             sage: F = DoublePoset([(4,6), (5,6)], [(4,5), (5,6)], elements=[4,5,6])
@@ -712,6 +792,8 @@ class DoublePoset(Parent, UniqueRepresentation):
         Return the number of all pictures `\phi` from the
         double poset ``self`` to another double poset ``other``.
 
+        See :meth:`pictures`.
+
         EXAMPLES::
 
             sage: E = DoublePoset([(1,2)], [(1,2), (2,3)], elements=[1,2,3])
@@ -722,6 +804,10 @@ class DoublePoset(Parent, UniqueRepresentation):
             sage: F = DoublePoset([(3,4)], [(3,4)], elements=[3,4])
             sage: E.number_of_pictures(F)
             1
+            sage: E = DoublePoset([(1,3), (2,3)], [(1,2), (2,3)], elements=[1,2,3])
+            sage: F = DoublePoset([(4,6), (5,6)], [(4,5), (5,6)], elements=[4,5,6])
+            sage: E.number_of_pictures(F)
+            2
         """
         return sum(1 for _ in self.pictures_iter(other))
 
@@ -743,28 +829,27 @@ class DoublePoset(Parent, UniqueRepresentation):
             return
 
         n = len(E)
-        count = 0
 
-        # get all bijections
+        # get all bijections phi : E -> F
         for sigma in permutations(range(n)):
-            phi = {E[i]: F[sigma[i]] for i in range(n)}
+            phi = {Ei : F[sigma[i]] for (i, Ei) in enumerate(E)}
 
             # Isomorphism of first orders
-            forward_fail = any(
+            order1_fail = any(
                 D1.leq(1, e1, e2) != D2.leq(1, phi[e1], phi[e2])
                 for e1 in E for e2 in E if e1 != e2
             )
 
-            if forward_fail:
+            if order1_fail:
                 continue
 
             # Isomorphism of second orders
-            backward_fail = any(
+            order2_fail = any(
                 D1.leq(2, e1, e2) != D2.leq(2, phi[e1], phi[e2])
                 for e1 in E for e2 in E if e1 != e2
             )
 
-            if not backward_fail:
+            if not order2_fail:
                 yield phi
 
     def isomorphisms(self, other):
@@ -774,22 +859,25 @@ class DoublePoset(Parent, UniqueRepresentation):
         The isomorphisms are encoded as dictionaries
         `\{e: \phi(e)\}`.
 
-        An **isomorphism** between two double posets
-        `(E, \leq_1, \leq_2)` and `(F, \leq_1, \leq_2)` is a bijection
-        `\phi: E \to F` such that:
+        An *isomorphism* between two double posets
+        `(E, \leq_1, \leq_2)` and `(F, \leq_1, \leq_2)`
+        is a bijection `\phi: E \to F` such that:
 
-        - for all`$e, e' \in E`,
-          `\phi(e) \leq_1 \phi(e')` in ``other`` if and only if `e \leq_1 e'` in ``self``;
-        - for all $e, e' \in E$,
-          `\phi(e) \leq_2 \phi(e')` in ``other`` if and only if `e \leq_2 e'` in ``self``.
+        - for all `e, e' \in E`,
+          `\phi(e) \leq_1 \phi(e')` in `F`
+          if and only if `e \leq_1 e'` in `E`;
+        - for all `e, e' \in E`,
+          `\phi(e) \leq_2 \phi(e')` in `F`
+          if and only if `e \leq_2 e'` in `E`.
 
         INPUT:
 
-        - ``other`` -- a second ``DoublePoset`` with the same number of elements.
+        - ``other`` -- a second ``DoublePoset``.
 
         OUTPUT:
 
-        - A list of bijections representing all isomorphisms between ``self`` and ``other``.
+        - A list of bijections representing all
+          isomorphisms from ``self`` to ``other``.
 
         EXAMPLES::
 
@@ -797,6 +885,8 @@ class DoublePoset(Parent, UniqueRepresentation):
             sage: D2 = DoublePoset([(3,4)], [(3,4)], elements=[3,4])
             sage: D1.isomorphisms(D2)
             [{1: 3, 2: 4}]
+            sage: D1.isomorphisms(D1)
+            [{1: 1, 2: 2}]
 
             sage: Y = Poset([[1,2,3,4], [[1,2], [2,3], [2,4]]])
             sage: D = DoublePoset(Y, Y)
@@ -813,6 +903,8 @@ class DoublePoset(Parent, UniqueRepresentation):
         r"""
         Return the number of all isomorphisms `\phi` from the
         double poset ``self`` to another double poset ``other``.
+
+        See :meth:`isomorphisms`.
 
         EXAMPLES::
 
@@ -852,6 +944,8 @@ class DoublePoset(Parent, UniqueRepresentation):
         Return whether the double poset ``self`` is
         isomorphic to another double poset ``other``.
 
+        See :meth:`isomorphisms`.
+
         EXAMPLES::
 
             sage: P = Poset([[1,2],[(1,2)]])
@@ -866,76 +960,110 @@ class DoublePoset(Parent, UniqueRepresentation):
         """
         return any(True for _ in self.isomorphisms_iter(other))
 
+    def is_pi_partition(self, x):
+        r"""
+        Check if the given map ``x`` (provided as a
+        dictionary with the elements of ``self`` as
+        keys) is a `\pi`-partition of ``self``.
+
+        Here, we do not require the output values of
+        ``x`` to be positive integers; they merely
+        have to belong to a totally ordered set.
+
+        See :meth:`pi_partitions`.
+
+        EXAMPLES::
+
+            sage: D = DoublePoset([(1, 2), (1, 3)], [(2, 1)],
+            ....:                 elements=[1, 2, 3])
+            sage: D.is_pi_partition({1: 5, 2: 6, 3: 4})
+            False
+            sage: D.is_pi_partition({1: 2, 2: 2, 3: 4})
+            False
+            sage: D.is_pi_partition({1: 2, 2: 3, 3: 2})
+            True
+            sage: D.is_pi_partition({1: 0, 2: 0, 3: 0})
+            False
+        """
+        E = list(self)
+        for e1 in E:
+            for e2 in E:
+                if e1 == e2:
+                    continue
+                if self.leq(1, e1, e2):
+                    if x[e1] > x[e2]:
+                        return False
+                    if self.geq(2, e1, e2) and x[e1] == x[e2]:
+                        return False
+        return True
+
     def pi_partitions_iter(self, bound):
         r"""
-        Iterate over all `\pi`-partitions x: E -> {1, ..., bound} for this double poset.
+        Iterate over all `\pi`-partitions
+        `x: E \to \{1, 2, ..., b\}` for this double poset,
+        where `E` is the double poset ``self``, and
+        where `b` is a nonnegative integer provided
+        as the argument ``bound``.
 
-        The `\pi`-partitions are encoded as dictionaries.
-
-        A map x is a `\pi`-partition if:
-            - e <_1 e'               => x(e) <= x(e')
-            - e <_1 e' and e >=_2 e' => x(e) < x(e')
+        See :meth:`pi_partitions`.
 
         INPUT:
-            - bound: positive integer N, values of x are in {1,...,N}
+
+            - bound: positive integer ``b``; forces
+              the values of ``x`` to be in ``{1,2,...,N}``
         """
         E = list(self)
 
         for values in product(range(1, bound+1), repeat=len(E)):
             x = dict(zip(E, values))
-            valid = True
-            for e1 in E:
-                for e2 in E:
-                    if e1 == e2:
-                        continue
-                    if self.leq(1, e1, e2):
-                        if x[e1] > x[e2]:
-                            valid = False
-                            break
-                        if self.geq(2, e1, e2) and x[e1] == x[e2]:
-                            valid = False
-                            break
-                if not valid:
-                    break
-            if valid:
+            if self.is_pi_partition(x):
                 yield x
 
     def pi_partitions(self, bound):
         r"""
-        Return a list of all `\pi`-partitions
-        `x : E \to \{1, ..., b\}` for this double poset,
-        where `b` is the integer ``bound``.
+        Iterate over all `\pi`-partitions
+        `x: E \to \{1, 2, ..., b\}` for this double poset,
+        where `E` is the double poset ``self``, and
+        where `b` is a nonnegative integer provided
+        as the argument ``bound``.
 
         The `\pi`-partitions are encoded as dictionaries.
+
+        A map `x: E \to \{1, 2, ..., b\}` is a
+        `\pi`-partition if:
+        - for any `e, e' \in E` satisfying `e <_1 e'`,
+          we have `x(e) \leq x(e')`;
+        - for any `e, e' \in E` satisfying `e <_1 e'`
+          and `e \geq_2 e'`, we have `x(e) < x(e')`.
+
+        INPUT:
+
+            - bound: positive integer ``b``; forces
+              the values of ``x`` to be in ``{1,2,...,b}``
 
         EXAMPLES::
 
             sage: D = DoublePoset([(1,2)], [(2,1)], elements=[1,2])
-            sage: D.pi_partitions(2)
-            [{1: 1, 2: 2}]
+            sage: sorted([(x[1], x[2]) for x in D.pi_partitions(2)])
+            [(1, 2)]
 
             sage: D = DoublePoset([(1,2)], [(2,1)], elements=[1,2])
-            sage: D.pi_partitions(3)
-            [{1: 1, 2: 2}, {1: 1, 2: 3}, {1: 2, 2: 3}]
+            sage: sorted([(x[1], x[2]) for x in D.pi_partitions(3)])
+            [(1, 2), (1, 3), (2, 3)]
 
             sage: D = DoublePoset([], [(1, 2)], elements=[1, 2])
-            sage: D.pi_partitions(2)
-            [{2: 1, 1: 1}, {2: 1, 1: 2}, {2: 2, 1: 1}, {2: 2, 1: 2}]
+            sage: sorted([(x[1], x[2]) for x in D.pi_partitions(2)])
+            [(1, 1), (1, 2), (2, 1), (2, 2)]
 
-            sage: D = DoublePoset([(1, 2), (2, 3)], [(1, 3)], elements=[1, 2, 3])
+            sage: D = DoublePoset([(1, 2), (2, 3)], [(1, 3)],
+            ....:                 elements=[1, 2, 3])
             sage: len(D.pi_partitions(3))
             10
-            sage: D.pi_partitions(3)         
-            [{1: 1, 2: 1, 3: 1},
-            {1: 1, 2: 1, 3: 2},
-            {1: 1, 2: 1, 3: 3},
-            {1: 1, 2: 2, 3: 2},
-            {1: 1, 2: 2, 3: 3},
-            {1: 1, 2: 3, 3: 3},
-            {1: 2, 2: 2, 3: 2},
-            {1: 2, 2: 2, 3: 3},
-            {1: 2, 2: 3, 3: 3},
-            {1: 3, 2: 3, 3: 3}]
+            sage: sorted([(x[1], x[2], x[3]) for x in D.pi_partitions(3)])
+            [(1, 1, 1), (1, 1, 2), (1, 1, 3),
+             (1, 2, 2), (1, 2, 3), (1, 3, 3),
+             (2, 2, 2), (2, 2, 3), (2, 3, 3),
+             (3, 3, 3)]
 
             sage: D = DoublePoset([(1,2), (2,3), (1,4)], [(1,3), (3,4)], elements=[1,2,3,4])
             sage: len(D.pi_partitions(4))
@@ -949,11 +1077,19 @@ class DoublePoset(Parent, UniqueRepresentation):
         Return the graph of two double posets
         ``self`` and ``other`` given a bijection ``phi``.
 
-        If ``self`` is `E` and ``other`` is `F`, and if ``phi`` is a
-        bijection `\phi : E \to F`, then this is
-        `E \times_\phi F`.
+        If ``self`` is `E` and ``other`` is `F`, and
+        if ``phi`` is a bijection `\phi : E \to F`, then
+        this is `E \times_\phi F` as defined in
+        [MalReu95]_. Explicitly, this is the set of all
+        pairs `(e, \phi(e))`, equipped with the first
+        order `<_1` inherited from `F` (that is, we let
+        `(e, f) <_1 (e', f')` if and only if
+        `f <_1 f'`) and the second order `<_2` inherited
+        from `E` (that is, we let
+        `(e, f) <_2 (e', f')` if and only if
+        `e <_1 e'`).
 
-        The bijection phi should be given as a
+        The bijection ``phi`` should be given as a
         dictionary `\{e: \phi(e)\}`.
 
         EXAMPLES::
@@ -973,8 +1109,10 @@ class DoublePoset(Parent, UniqueRepresentation):
             sage: G2.poset(2).cover_relations()
             [[(1, 4), (2, 3)]]
 
-            sage: D1 = DoublePoset([(1,2), (1,3), (2,4), (3,4)], [(1,3), (2,3)], elements=[1,2,3,4])
-            sage: D2 = DoublePoset([(5,6), (6,7), (7,8)], [(5,7), (6,8)], elements=[5,6,7,8])
+            sage: D1 = DoublePoset([(1,2), (1,3), (2,4), (3,4)],
+            ....:                  [(1,3), (2,3)], elements=[1,2,3,4])
+            sage: D2 = DoublePoset([(5,6), (6,7), (7,8)],
+            ....:                  [(5,7), (6,8)], elements=[5,6,7,8])
             sage: phi = {1:6, 2:5, 3:8, 4:7}
             sage: G = D1.graph(D2, phi)
             sage: G.elements()
@@ -997,41 +1135,17 @@ class DoublePoset(Parent, UniqueRepresentation):
         for (e1, f1) in elements:
             for (e2, f2) in elements:
                 if f1 != f2 and D2.leq(1, f1, f2):
-                    cov1.append(((e1,f1),(e2,f2)))
+                    cov1.append(((e1,f1), (e2,f2)))
 
         # second order: (e, f) <_2 (e', f') iff e <_2 e' in D1
         for (e1, f1) in elements:
             for (e2, f2) in elements:
                 if e1 != e2 and D1.leq(2, e1, e2):
-                    cov2.append(((e1,f1),(e2,f2)))
+                    cov2.append(((e1,f1), (e2,f2)))
 
         D_phi = DoublePoset(cov1, cov2, elements=elements)
 
         return D_phi
-
-def is_total_order(poset):
-    """
-    Check whether the input poset is in total order.
-
-    EXAMPLES::
-
-        sage: P = Poset(([1,2,3], [(1,2), (2,3)]))
-        sage: is_total_order(P)
-        True
-
-        sage: Q = Poset(([1,2,3], [(1,2)]))
-        sage: is_total_order(Q)
-        False
-    """
-    elements = list(poset)
-    for i in range(len(elements)):
-        for j in range(i + 1, len(elements)):
-            a = elements[i]
-            b = elements[j]
-            if not (poset.is_lequal(a, b) or poset.is_lequal(b, a)):
-                return False
-    return True
-
 
 class SpecialDoublePoset(DoublePoset):
     r"""
@@ -1040,14 +1154,16 @@ class SpecialDoublePoset(DoublePoset):
 
     EXAMPLES::
 
+        sage: from sage.combinat.posets.double_posets import SpecialDoublePoset
         sage: P1 = Poset(([1, 2, 3], [(1,2)]))
         sage: P2 = Poset(([1, 2, 3], [(1,2), (2,3)]))  # total order
         sage: SD = SpecialDoublePoset(P1, P2)
         sage: SD
         Special double poset containing 3 elements
-        sage: SD.poset(2).is_total_order()
+        sage: SD.poset(2).is_chain()
         True
 
+        sage: from sage.combinat.posets.double_posets import SpecialDoublePoset
         sage: P2 = Poset(([1, 2, 3], [(1,2)]))  # not total
         sage: SpecialDoublePoset(P1, P2)
         Traceback (most recent call last):
@@ -1060,7 +1176,7 @@ class SpecialDoublePoset(DoublePoset):
         D = super(SpecialDoublePoset, cls).__classcall__(cls, P1, P2, elements=elements, category=category)
 
         
-        if not is_total_order(D._P2):
+        if not D._P2.is_chain():
             raise ValueError("The second order must be a total order.")
         return D
 
@@ -1073,8 +1189,16 @@ class SpecialDoublePoset(DoublePoset):
 
 def internal_product_helper(D1, D2):
     r"""
-    Iterate over all D1 x_phi D2 for all increasing bijections phi
-    (the internal product = the sum of these)
+    Iterate over all graphs ``D1`` `\times_phi` ``D2``
+    for all increasing bijections ``phi`` from ``D1``
+    to ``D2``.
+
+    The internal product in the Hopf algebra
+    is the sum of these graphs.
+
+    TODO::
+
+        Doctest this.
     """
 
     E = D1.elements()
@@ -1084,7 +1208,6 @@ def internal_product_helper(D1, D2):
         return
 
     n = len(E)
-    results = []
 
     for sigma in permutations(range(n)):
         phi = {E[i]: F[sigma[i]] for i in range(n)}
@@ -1112,7 +1235,9 @@ def DiagramDoublePoset(D, partition=False):
     `(i, j) \leq_2 (u, v) \iff
     i \leq u \text{ and } j \geq v`.
     Note that this is not quite the `E_\nu` from
-    [MalReu95]_.
+    [MalReu95]_, but serves the same purpose
+    (encoding James-Peel/Zelevinsky pictures
+    between skew Young diagrams).
 
     The diagram `D` can be provided as an
     iterable consisting of pairs `(i, j)`, or,
@@ -1123,6 +1248,7 @@ def DiagramDoublePoset(D, partition=False):
 
     EXAMPLES::
 
+        sage: from sage.combinat.posets.double_posets import DiagramDoublePoset
         sage: D = DiagramDoublePoset([[3,3],[1]], partition=True)
         sage: D
         Finite double poset containing 5 elements
@@ -1148,6 +1274,7 @@ def DiagramDoublePoset(D, partition=False):
     inner product of the respective skew Schur
     functions)::
 
+        sage: from sage.combinat.posets.double_posets import DiagramDoublePoset
         sage: def num_pics(lam, mu):
         ....:     Dlam = DiagramDoublePoset(lam, partition=True)
         ....:     Dmu = DiagramDoublePoset(mu, partition=True)
@@ -1162,6 +1289,7 @@ def DiagramDoublePoset(D, partition=False):
         True
     """
     if partition:
+        from sage.combinat.skew_partition import SkewPartition
         cells = SkewPartition(D).cells()
     else:
         cells = list(set(D))
@@ -1172,8 +1300,10 @@ def DiagramDoublePoset(D, partition=False):
     return DoublePoset(rel1, rel2, elements=cells)
 
 def check_LR(n):
+    # To be removed from the final version.
     # Checking the number of pictures for skew partitions.
     # True for all n <= 5.
+    from sage.combinat.skew_partition import SkewPartitions
     for lam in SkewPartitions(n):
         Dlam = DiagramDoublePoset(lam, partition=True)
         for mu in SkewPartitions(n):
@@ -1184,4 +1314,378 @@ def check_LR(n):
                 print(lam, mu)
                 return False
     return True
+
+class DoublePosets(UniqueRepresentation, Parent):
+    """
+    Return the combinatorial class of double posets on
+    a given ground set ``s``.
+
+    EXAMPLES::
+
+        sage: DPs = DoublePosets([1,2,3]); DPs
+        Double posets with ground set {1, 2, 3}
+        sage: DPs.cardinality()
+        ...
+        sage: DPs.first()
+        [{1}, {2}, {3}, {4}]
+        sage: DPs.last()
+        [{1, 2, 3, 4}]
+        sage: DPs.random_element().parent() is OS
+        True
+
+    ::
+
+        sage: DPs = DoublePosets("cat")
+        sage: DPs  # random
+        Double posets of {'a', 't', 'c'}
+        sage: DPs.first()
+        [[{'a', 'c', 't'}],
+         [{'a', 'c'}, {'t'}],
+         [{'a', 't'}, {'c'}],
+         [{'a'}, {'c', 't'}],
+         [{'a'}, {'c'}, {'t'}],
+         [{'a'}, {'t'}, {'c'}],
+         [{'c', 't'}, {'a'}],
+         [{'c'}, {'a', 't'}],
+         [{'c'}, {'a'}, {'t'}],
+         [{'c'}, {'t'}, {'a'}],
+         [{'t'}, {'a', 'c'}],
+         [{'t'}, {'a'}, {'c'}],
+         [{'t'}, {'c'}, {'a'}]]
+
+    TESTS::
+
+        sage: S = DoublePosets()
+        sage: x = S([[3,5], [2], [1,4,6]])
+        sage: x.parent()
+        Ordered set partitions
+    """
+    @staticmethod
+    def __classcall_private__(cls, s=None):
+        """
+        Choose the correct parent based upon input.
+
+        EXAMPLES::
+
+            sage: DoublePosets(4)
+            Ordered set partitions of {1, 2, 3, 4}
+            sage: DoublePosets(4, [1, 2, 1])
+            Ordered set partitions of {1, 2, 3, 4} into parts of size [1, 2, 1]
+        """
+        if s is None:
+            return DoublePosets_all()
+        if isinstance(s, (int, Integer)):
+            if s < 0:
+                raise ValueError("s must be nonnegative")
+            s = frozenset(range(1, s + 1))
+        else:
+            s = frozenset(s)
+
+        return DoublePosets_s(s)
+
+    def __init__(self, s):
+        """
+        Initialize ``self``.
+
+        EXAMPLES::
+
+            sage: OS = DoublePosets(4)
+            sage: TestSuite(OS).run()
+        """
+        self._set = s
+        Parent.__init__(self, category=FiniteEnumeratedSets())
+
+    def _element_constructor_(self, s):
+        """
+        Construct an element of ``self`` from ``s``.
+
+        EXAMPLES::
+
+            sage: OS = DoublePosets(4)
+            sage: x = OS([[1,3],[2,4]]); x
+            [{1, 3}, {2, 4}]
+            sage: x.parent()
+            Ordered set partitions of {1, 2, 3, 4}
+        """
+        if isinstance(s, OrderedSetPartition):
+            raise ValueError("cannot convert %s into an element of %s" % (s, self))
+        return self.element_class(self, list(s))  # HERE the parent "self" is not good
+
+    Element = DoublePoset
+
+    def __contains__(self, x):
+        """
+        TESTS::
+
+            sage: OS = DoublePosets([1,2,3,4])
+            sage: all(sp in OS for sp in OS)
+            True
+            sage: [[1,2], [], [3,4]] in OS
+            False
+            sage: [Set([1,2]), Set([3,4])] in OS
+            True
+            sage: [set([1,2]), set([3,4])] in OS
+            True
+
+        Make sure the set really matches::
+
+            sage: [set([5,6]), set([3,4])] in OS
+            False
+        """
+        return isinstance(x, DoublePoset)
+
+class DoublePosets_all(DoublePosets):
+    r"""
+    Double posets on ground sets`\{1, \ldots, n\}` for all
+    `n \in \ZZ_{\geq 0}`.
+    """
+
+    def __init__(self):
+        """
+        Initialize ``self``.
+
+        EXAMPLES::
+
+            sage: OS = DoublePosets()
+            sage: TestSuite(OS).run()  # long time
+        """
+        Parent.__init__(self, category=InfiniteEnumeratedSets())
+
+    def subset(self, size=None, **kwargs):
+        """
+        Return the subset of ordered set partitions of a given
+        size and additional keyword arguments.
+
+        EXAMPLES::
+
+            sage: P = DoublePosets()
+            sage: P.subset(4)
+            Ordered set partitions of {1, 2, 3, 4}
+        """
+        if size is None:
+            return self
+        return DoublePosets(size, **kwargs)
+
+    def __iter__(self):
+        """
+        Iterate over ``self``.
+
+        EXAMPLES::
+
+            sage: it = iter(DoublePosets())
+            sage: [next(it) for _ in range(10)]
+            [[], [{1}], [{1}, {2}], [{2}, {1}], [{1, 2}],
+             [{1}, {2}, {3}], [{1}, {3}, {2}], [{2}, {1}, {3}],
+             [{3}, {1}, {2}], [{2}, {3}, {1}]]
+        """
+        n = 0
+        while True:
+            for X in DoublePosets(n):
+                yield self.element_class(self, list(X), check=False)
+            n += 1
+
+    def _element_constructor_(self, s):
+        """
+        Construct an element of ``self`` from ``s``.
+
+        EXAMPLES::
+
+            sage: OS = DoublePosets()
+            sage: OS([[1,3],[2,4]])
+            [{1, 3}, {2, 4}]
+        """
+        if isinstance(s, DoublePoset):
+            gset = set(s.elements())
+            if gset == frozenset(range(1, len(gset) + 1)):
+                return self.element_class(self, list(s))
+            raise ValueError("cannot convert %s into an element of %s" % (s, self))
+        return self.element_class(self, s)
+
+    def __contains__(self, x):
+        """
+        TESTS::
+
+            sage: OS = DoublePosets([1,2,3,4])
+            sage: AOS = DoublePosets()
+            sage: all(sp in AOS for sp in OS)
+            True
+            sage: AOS.__contains__([[1,3], [4], [5,2]])
+            True
+            sage: AOS.__contains__([Set([1,3]), Set([4]), Set([5,2])])
+            True
+            sage: [Set([1,4]), Set([3])] in AOS
+            False
+            sage: [Set([1,3]), Set([4,2]), Set([2,5])] in AOS
+            False
+            sage: [Set([1,2]), Set()] in AOS
+            False
+        """
+        if isinstance(x, OrderedSetPartition):
+            if x.parent() is self:
+                return True
+            gset = x.parent()._set
+            return gset == frozenset(range(1, len(gset) + 1))
+
+        # x must be a list or a tuple
+        if not isinstance(x, (list, tuple)):
+            return False
+
+        # Check to make sure each element of the list is a nonempty set
+        if not all(s and isinstance(s, (set, frozenset, list, tuple, Set_generic)) for s in x):
+            return False
+
+        if not all(isinstance(s, (set, frozenset, Set_generic)) or len(s) == len(set(s)) for s in x):
+            return False
+        X = set(y for p in x for y in p)
+        return len(X) == sum(len(s) for s in x) and X == frozenset(range(1, len(X) + 1))
+
+    def _coerce_map_from_(self, X):
+        """
+        Return ``True`` if there is a coercion map from ``X``.
+
+        EXAMPLES::
+
+            sage: OSP = DoublePosets()
+            sage: OSP._coerce_map_from_(DoublePosets(3))
+            True
+            sage: OSP._coerce_map_from_(DoublePosets(['a','b']))
+            False
+        """
+        if X is self:
+            return True
+        if isinstance(X, DoublePosets):
+            return X._set == frozenset(range(1, len(X._set) + 1))
+        return super()._coerce_map_from_(X)
+
+    def _repr_(self):
+        """
+        TESTS::
+
+            sage: DoublePosets()
+            Ordered set partitions
+        """
+        return "Ordered set partitions"
+
+    class Element(OrderedSetPartition):
+        def _richcmp_(self, other, op):
+            """
+            TESTS::
+
+                sage: OSP = DoublePosets()
+                sage: el1 = OSP([[1,3], [4], [2]])
+                sage: el2 = OSP([[3,1], [2], [4]])
+                sage: el1 == el1, el2 == el2, el1 == el2    # indirect doctest
+                (True, True, False)
+                sage: el1 <= el2, el1 >= el2, el2 <= el1    # indirect doctest
+                (False, True, True)
+            """
+            return richcmp([sorted(s) for s in self],
+                           [sorted(s) for s in other], op)
+
+
+class DoublePosets_s(DoublePosets):
+    """
+    Class of double posets on a given ground set `S`.
+    """
+
+    def _repr_(self):
+        """
+        TESTS::
+
+            sage: DoublePosets([1,2,3,4])
+            Ordered set partitions of {1, 2, 3, 4}
+        """
+        return "Ordered set partitions of %s" % Set(self._set)
+
+    def cardinality(self):
+        """
+        EXAMPLES::
+
+            sage: DoublePosets(0).cardinality()
+            1
+            sage: DoublePosets(1).cardinality()
+            1
+            sage: DoublePosets(2).cardinality()
+            3
+            sage: DoublePosets(3).cardinality()
+            13
+            sage: DoublePosets([1,2,3]).cardinality()
+            13
+            sage: DoublePosets(4).cardinality()
+            75
+            sage: DoublePosets(5).cardinality()
+            541
+        """
+        return Posets(len(self._set)).cardinality() ** 2
+
+    def __iter__(self):
+        """
+        EXAMPLES::
+
+            sage: list(DoublePosets([1,2,3]))
+            [[{1}, {2}, {3}],
+             [{1}, {3}, {2}],
+             [{2}, {1}, {3}],
+             [{3}, {1}, {2}],
+             [{2}, {3}, {1}],
+             [{3}, {2}, {1}],
+             [{1}, {2, 3}],
+             [{2}, {1, 3}],
+             [{3}, {1, 2}],
+             [{1, 2}, {3}],
+             [{1, 3}, {2}],
+             [{2, 3}, {1}],
+             [{1, 2, 3}]]
+
+        TESTS:
+
+        Test for :issue:`35654`::
+
+            sage: DoublePosets(set(),[0,0,0]).list()
+            [[{}, {}, {}]]
+        """
+        n = len(self._set)
+        for P1 in Posets(n):
+            P1 = P1.relabel(...)
+            for P2 in Posets(n):
+                yield self.element_class(self, P1, P2, check=False)
+
+
+# HOPF ALGEBRA FILE:
+
+
+# sage.doctest: needs sage.combinat sage.modules
+r"""
+Labelled double poset Hopf algebra (LDPSym)
+
+AUTHORS:
+
+- Yuxuan Sun and Darij Grinberg (2025-08-07): first implementation
+
+TESTS:
+
+TODO
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2025 Yuxuan Sun <sun00816 at umn.edu>,
+#                          Darij Grinberg <darijgrinberg at gmail.com>
+#
+#  Distributed under the terms of the GNU General Public License (GPL)
+#  as published by the Free Software Foundation; either version 2 of
+#  the License, or (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
+
+from sage.misc.bindable_class import BindableClass
+from sage.structure.parent import Parent
+from sage.structure.unique_representation import UniqueRepresentation
+from sage.structure.global_options import GlobalOptions
+from sage.categories.hopf_algebras import HopfAlgebras
+from sage.categories.realizations import Category_realization_of_parent
+from sage.combinat.free_module import CombinatorialFreeModule
+from sage.combinat.set_partition_ordered import DoublePosets
+from sage.combinat.shuffle import ShuffleProduct_overlapping, ShuffleProduct
+from sage.rings.integer_ring import ZZ
+# TODO: from sage.combinat.posets.double_posets import DoublePoset
 
