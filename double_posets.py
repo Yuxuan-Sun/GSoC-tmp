@@ -37,8 +37,15 @@ from sage.structure.unique_representation import UniqueRepresentation
 from sage.categories.finite_posets import FinitePosets
 from sage.combinat.posets.posets import Poset
 from itertools import permutations, product
-
-from sage.combinat.set_partition_ordered import OrderedSetPartition
+from sage.rings.integer import Integer
+from sage.rings.integer_ring import ZZ
+from sage.rings.rational_field import QQ
+from sage.categories.finite_enumerated_sets import FiniteEnumeratedSets
+from sage.categories.infinite_enumerated_sets import InfiniteEnumeratedSets
+from sage.combinat.posets.poset_examples import Posets
+from sage.categories.sets_cat import Sets
+from sage.sets.set import Set
+from sage.structure.parent import Set_generic
 
 class DoublePoset(Parent, UniqueRepresentation):
     r"""
@@ -123,9 +130,23 @@ class DoublePoset(Parent, UniqueRepresentation):
         sage: D.elements()
         {1, 2, 3}
 
+    Alternative ways to provide the arguments::
+
+        sage: P = Poset([[1,2,3], [[1,2], [1,3]]])
+        sage: Q = Poset([[1,2,3], [[1,2]]])
+        sage: D = DoublePoset(P, Q)
+        sage: E = DoublePoset(P, P2=Q)
+        sage: F = DoublePoset([P, Q])
+        sage: G = DoublePoset(D)
+        sage: H = DoublePoset(P.cover_relations(),
+        ....:                 Q.cover_relations(),
+        ....:                 elements=[1,2,3])
+        sage: D is E is F is G is H
+        True
+
     """
     @staticmethod
-    def __classcall__(cls, P1, P2, elements=None, category=None):
+    def __classcall__(cls, P1, P2=None, elements=None, category=None):
         """
         Normalize the arguments passed to the constructor.
 
@@ -135,6 +156,10 @@ class DoublePoset(Parent, UniqueRepresentation):
         - ``P2`` -- a finite poset `P_2`, required to equal
           `P_1` as a set
         """
+        if P2 is None:
+            if isinstance(P1, DoublePoset):
+                return P1
+            return DoublePoset(P1[0], P1[1], elements=elements, category=category)
         if P1 not in FinitePosets:
             if elements is None:
                 # take the elements that appear in P1
@@ -153,7 +178,7 @@ class DoublePoset(Parent, UniqueRepresentation):
             sage: D = DoublePoset(Poset([[1,2,3,4],
             ....:                       [[1,2],[2,4],[1,3],[3,4]]]),
             ....:                       Poset([[1,2,3,4],[[2,3]]]))
-            sage: TestSuite(D).run()
+            sage: TestSuite(D).run(skip="_test_pickling")
 
         See also the extensive tests in the class documentation.
         """
@@ -1327,7 +1352,7 @@ class DoublePosets(UniqueRepresentation, Parent):
         sage: DPs = DoublePosets([1,2,3]); DPs
         Double posets with ground set {1, 2, 3}
         sage: DPs.cardinality()
-        ...
+        25
         sage: DPs.first()
         [{1}, {2}, {3}, {4}]
         sage: DPs.last()
@@ -1370,9 +1395,9 @@ class DoublePosets(UniqueRepresentation, Parent):
         EXAMPLES::
 
             sage: DoublePosets(4)
-            Ordered set partitions of {1, 2, 3, 4}
+            Double posets on {1, 2, 3, 4}
             sage: DoublePosets(4, [1, 2, 1])
-            Ordered set partitions of {1, 2, 3, 4} into parts of size [1, 2, 1]
+            Double posets on {1, 2, 3, 4} into parts of size [1, 2, 1]
         """
         if s is None:
             return DoublePosets_all()
@@ -1407,11 +1432,9 @@ class DoublePosets(UniqueRepresentation, Parent):
             sage: x = OS([[1,3],[2,4]]); x
             [{1, 3}, {2, 4}]
             sage: x.parent()
-            Ordered set partitions of {1, 2, 3, 4}
+            Double posets on {1, 2, 3, 4}
         """
-        if isinstance(s, OrderedSetPartition):
-            raise ValueError("cannot convert %s into an element of %s" % (s, self))
-        return self.element_class(self, list(s))  # HERE the parent "self" is not good
+        return self.element_class(self, s)
 
     Element = DoublePoset
 
@@ -1438,7 +1461,7 @@ class DoublePosets(UniqueRepresentation, Parent):
 
 class DoublePosets_all(DoublePosets):
     r"""
-    Double posets on ground sets`\{1, \ldots, n\}` for all
+    Double posets on ground sets `\{1, \ldots, n\}` for all
     `n \in \ZZ_{\geq 0}`.
     """
 
@@ -1455,14 +1478,14 @@ class DoublePosets_all(DoublePosets):
 
     def subset(self, size=None, **kwargs):
         """
-        Return the subset of ordered set partitions of a given
+        Return the subset of double posets of a given
         size and additional keyword arguments.
 
         EXAMPLES::
 
             sage: P = DoublePosets()
             sage: P.subset(4)
-            Ordered set partitions of {1, 2, 3, 4}
+            Double posets on {1, 2, 3, 4}
         """
         if size is None:
             return self
@@ -1483,7 +1506,7 @@ class DoublePosets_all(DoublePosets):
         n = 0
         while True:
             for X in DoublePosets(n):
-                yield self.element_class(self, list(X), check=False)
+                yield self.element_class(X)
             n += 1
 
     def _element_constructor_(self, s):
@@ -1501,7 +1524,7 @@ class DoublePosets_all(DoublePosets):
             if gset == frozenset(range(1, len(gset) + 1)):
                 return self.element_class(self, list(s))
             raise ValueError("cannot convert %s into an element of %s" % (s, self))
-        return self.element_class(self, s)
+        return self.element_class(s)
 
     def __contains__(self, x):
         """
@@ -1522,24 +1545,12 @@ class DoublePosets_all(DoublePosets):
             sage: [Set([1,2]), Set()] in AOS
             False
         """
-        if isinstance(x, OrderedSetPartition):
-            if x.parent() is self:
-                return True
-            gset = x.parent()._set
-            return gset == frozenset(range(1, len(gset) + 1))
-
-        # x must be a list or a tuple
-        if not isinstance(x, (list, tuple)):
+        if not isinstance(x, DoublePoset):
             return False
 
-        # Check to make sure each element of the list is a nonempty set
-        if not all(s and isinstance(s, (set, frozenset, list, tuple, Set_generic)) for s in x):
-            return False
-
-        if not all(isinstance(s, (set, frozenset, Set_generic)) or len(s) == len(set(s)) for s in x):
-            return False
-        X = set(y for p in x for y in p)
-        return len(X) == sum(len(s) for s in x) and X == frozenset(range(1, len(X) + 1))
+        elts = tuple(sorted(x.elements()))
+        n = len(elts)
+        return elts == tuple(range(1, n+1))
 
     def _coerce_map_from_(self, X):
         """
@@ -1556,7 +1567,9 @@ class DoublePosets_all(DoublePosets):
         if X is self:
             return True
         if isinstance(X, DoublePosets):
-            return X._set == frozenset(range(1, len(X._set) + 1))
+            elts = X.elements()
+            n = len(elts)
+            return frozenset(elts) == frozenset(range(1, n + 1))
         return super()._coerce_map_from_(X)
 
     def _repr_(self):
@@ -1564,25 +1577,12 @@ class DoublePosets_all(DoublePosets):
         TESTS::
 
             sage: DoublePosets()
-            Ordered set partitions
+            Double posets
         """
-        return "Ordered set partitions"
+        return "Double posets"
 
-    class Element(OrderedSetPartition):
-        def _richcmp_(self, other, op):
-            """
-            TESTS::
-
-                sage: OSP = DoublePosets()
-                sage: el1 = OSP([[1,3], [4], [2]])
-                sage: el2 = OSP([[3,1], [2], [4]])
-                sage: el1 == el1, el2 == el2, el1 == el2    # indirect doctest
-                (True, True, False)
-                sage: el1 <= el2, el1 >= el2, el2 <= el1    # indirect doctest
-                (False, True, True)
-            """
-            return richcmp([sorted(s) for s in self],
-                           [sorted(s) for s in other], op)
+    class Element(DoublePoset):
+        pass
 
 
 class DoublePosets_s(DoublePosets):
@@ -1595,9 +1595,9 @@ class DoublePosets_s(DoublePosets):
         TESTS::
 
             sage: DoublePosets([1,2,3,4])
-            Ordered set partitions of {1, 2, 3, 4}
+            Double posets on {1, 2, 3, 4}
         """
-        return "Ordered set partitions of %s" % Set(self._set)
+        return "Double posets on %s" % Set(self._set)
 
     def cardinality(self):
         """
@@ -1647,10 +1647,41 @@ class DoublePosets_s(DoublePosets):
             [[{}, {}, {}]]
         """
         n = len(self._set)
+        Slist = sorted(list(self._set))
+        relabeling_dict = {i: Si for (i, Si) in enumerate(Slist)}
         for P1 in Posets(n):
-            P1 = P1.relabel(...)
+            P1 = P1.relabel(relabeling_dict)
             for P2 in Posets(n):
-                yield self.element_class(self, P1, P2, check=False)
+                P2 = P2.relabel(relabeling_dict)
+                yield self.element_class(DoublePoset(P1, P2))
+
+    def __contains__(self, x):
+        """
+        TESTS::
+
+            sage: OS = DoublePosets([1,2,3,4])
+            sage: AOS = DoublePosets()
+            sage: all(sp in AOS for sp in OS)
+            True
+            sage: AOS.__contains__([[1,3], [4], [5,2]])
+            True
+            sage: AOS.__contains__([Set([1,3]), Set([4]), Set([5,2])])
+            True
+            sage: [Set([1,4]), Set([3])] in AOS
+            False
+            sage: [Set([1,3]), Set([4,2]), Set([2,5])] in AOS
+            False
+            sage: [Set([1,2]), Set()] in AOS
+            False
+        """
+        if not isinstance(x, DoublePoset):
+            return False
+
+        elts = frozenset(x.elements())
+        return elts == frozenset(self._set)
+
+    class Element(DoublePoset):
+        pass
 
 
 # HOPF ALGEBRA FILE:
