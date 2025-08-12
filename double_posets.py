@@ -156,7 +156,7 @@ class DoublePoset(Parent, UniqueRepresentation):
         - ``P2`` -- a finite poset `P_2`, required to equal
           `P_1` as a set
         """
-        if P2 is None:
+        if P2 is None: # just one argument provided
             if isinstance(P1, DoublePoset):
                 return P1
             return DoublePoset(P1[0], P1[1], elements=elements, category=category)
@@ -178,7 +178,7 @@ class DoublePoset(Parent, UniqueRepresentation):
             sage: D = DoublePoset(Poset([[1,2,3,4],
             ....:                       [[1,2],[2,4],[1,3],[3,4]]]),
             ....:                       Poset([[1,2,3,4],[[2,3]]]))
-            sage: TestSuite(D).run(skip="_test_pickling")
+            sage: TestSuite(D).run()
 
         See also the extensive tests in the class documentation.
         """
@@ -1717,13 +1717,11 @@ from sage.structure.global_options import GlobalOptions
 from sage.categories.hopf_algebras import HopfAlgebras
 from sage.categories.realizations import Category_realization_of_parent
 from sage.combinat.free_module import CombinatorialFreeModule
-# from sage.combinat.set_partition_ordered import DoublePosets ??????????
-from sage.combinat.shuffle import ShuffleProduct_overlapping, ShuffleProduct
 from sage.rings.integer_ring import ZZ
-# TODO: from sage.combinat.posets.double_posets import DoublePoset
+# TODO: from sage.combinat.posets.double_posets import DoublePoset, DoublePosets
 
 
-class LabelledDoublePosets(UniqueRepresentation, Parent):
+class LabelledDoublePosetsHA(UniqueRepresentation, Parent):
 
     def __init__(self, R):
         """
