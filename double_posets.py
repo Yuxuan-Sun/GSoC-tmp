@@ -38,6 +38,8 @@ from sage.categories.finite_posets import FinitePosets
 from sage.combinat.posets.posets import Poset
 from itertools import permutations, product
 
+from sage.combinat.set_partition_ordered import OrderedSetPartition
+
 class DoublePoset(Parent, UniqueRepresentation):
     r"""
     A (finite) double poset.
