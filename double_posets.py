@@ -1686,8 +1686,31 @@ from sage.structure.global_options import GlobalOptions
 from sage.categories.hopf_algebras import HopfAlgebras
 from sage.categories.realizations import Category_realization_of_parent
 from sage.combinat.free_module import CombinatorialFreeModule
-# from sage.combinat.set_partition_ordered import DoublePosets
+# from sage.combinat.set_partition_ordered import DoublePosets ??????????
 from sage.combinat.shuffle import ShuffleProduct_overlapping, ShuffleProduct
 from sage.rings.integer_ring import ZZ
 # TODO: from sage.combinat.posets.double_posets import DoublePoset
 
+
+class LabelledDoublePosets(UniqueRepresentation, Parent):
+
+    def __init__(self, R):
+        """
+        Initialize ``self``.
+
+        """
+        category = HopfAlgebras(R).Graded().Connected()
+        if R.is_zero():
+            category = category.Commutative()
+        Parent.__init__(self, base=R, category=category.WithRealizations())
+
+
+def Jollenbeck(sigma, tau):
+    from sage.combinat.permutation import Permutation
+    if not isinstance(sigma, Permutation):
+        sigma = Permutation(sigma)
+    if not isinstance(tau, Permutation):
+        sigma = Permutation(tau)
+
+    if sigma == tau.inverse(): return 1
+    return 0
