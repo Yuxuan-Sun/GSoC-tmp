@@ -1686,7 +1686,7 @@ from sage.structure.global_options import GlobalOptions
 from sage.categories.hopf_algebras import HopfAlgebras
 from sage.categories.realizations import Category_realization_of_parent
 from sage.combinat.free_module import CombinatorialFreeModule
-from sage.combinat.set_partition_ordered import DoublePosets
+# from sage.combinat.set_partition_ordered import DoublePosets
 from sage.combinat.shuffle import ShuffleProduct_overlapping, ShuffleProduct
 from sage.rings.integer_ring import ZZ
 # TODO: from sage.combinat.posets.double_posets import DoublePoset
