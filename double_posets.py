@@ -1,5 +1,3 @@
-# POSET FILE
-
 #!/usr/bin/env python
 # coding: utf-8
 
@@ -9,7 +7,7 @@ r"""
 This class implements finite double posets, i.e., finite sets
 equipped with two (unrelated) partial orders.
 
-Notation used in the definitions follows mainly [MalReu95]_.
+Notation used in the definitions follows mainly [MalReu11]_.
 
 AUTHORS:
 
@@ -17,7 +15,7 @@ AUTHORS:
 
 REFERENCES:
 
-.. [MalReu95] \Claudia Malvenuto, Christophe Reutenauer, *A self paired Hopf algebra on double posets and a Littlewood–Richardson rule*, Journal of Combinatorial Theory, Series A
+.. [MalReu11] \Claudia Malvenuto, Christophe Reutenauer, *A self paired Hopf algebra on double posets and a Littlewood–Richardson rule*, Journal of Combinatorial Theory, Series A
 Volume 118, Issue 4, May 2011, pp. 1322--1333, https://doi.org/10.1016/j.jcta.2010.10.010 .
 
 """
@@ -53,7 +51,7 @@ class DoublePoset(Parent, UniqueRepresentation):
 
     This means a finite set `E` equipped with two
     partial orders `\leq_1` and `\leq_2`.
-    See [MalReu95]_.
+    See [MalReu11]_.
 
     INPUT:
     - ``P1`` -- either a list of covering relations or a Sage
@@ -507,7 +505,7 @@ class DoublePoset(Parent, UniqueRepresentation):
     def compose(self, other, relabel=False):
         r"""
         Return the composition of two double posets as
-        defined in [MalReu95]_.
+        defined in [MalReu11]_.
 
         By default, this requires their ground sets
         to be disjoint.
@@ -1107,7 +1105,7 @@ class DoublePoset(Parent, UniqueRepresentation):
         If ``self`` is `E` and ``other`` is `F`, and
         if ``phi`` is a bijection `\phi : E \to F`, then
         this is `E \times_\phi F` as defined in
-        [MalReu95]_. Explicitly, this is the set of all
+        [MalReu11]_. Explicitly, this is the set of all
         pairs `(e, \phi(e))`, equipped with the first
         order `<_1` inherited from `F` (that is, we let
         `(e, f) <_1 (e', f')` if and only if
@@ -1176,7 +1174,7 @@ class DoublePoset(Parent, UniqueRepresentation):
 
 class SpecialDoublePoset(DoublePoset):
     r"""
-    A special double poset is a double poset `(E, \leq_1, \leq_2)` 
+    A special double poset is a double poset `(E, \leq_1, \leq_2)`
     where the second order `\leq_2` is a total order.
 
     EXAMPLES::
@@ -1199,10 +1197,10 @@ class SpecialDoublePoset(DoublePoset):
     """
     @staticmethod
     def __classcall__(cls, P1, P2, elements=None, category=None):
-        
+
         D = super(SpecialDoublePoset, cls).__classcall__(cls, P1, P2, elements=elements, category=category)
 
-        
+
         if not D._P2.is_chain():
             raise ValueError("The second order must be a total order.")
         return D
@@ -1224,7 +1222,7 @@ def DiagramDoublePoset(D, partition=False):
     `(i, j) \leq_2 (u, v) \iff
     i \leq u \text{ and } j \geq v`.
     Note that this is not quite the `E_\nu` from
-    [MalReu95]_, but serves the same purpose
+    [MalReu11]_, but serves the same purpose
     (encoding James-Peel/Zelevinsky pictures
     between skew Young diagrams).
 
@@ -1256,7 +1254,7 @@ def DiagramDoublePoset(D, partition=False):
          [(0, 1), (1, 1)],
          [(1, 1), (1, 0)]]
 
-    We check the result from [MalReu95]_ that the
+    We check the result from [MalReu11]_ that the
     number of pictures between the double posets of
     two skew Young diagrams is the corresponding
     Littlewood–Richardson coefficient (i.e., Hall
@@ -1312,14 +1310,18 @@ class DoublePosets(UniqueRepresentation, Parent):
     EXAMPLES::
 
         sage: DPs = DoublePosets([1,2,3]); DPs
-        Double posets with ground set {1, 2, 3}
+        Double posets on {1, 2, 3}
         sage: DPs.cardinality()
         25
-        sage: DPs.first()
-        [{1}, {2}, {3}, {4}]
-        sage: DPs.last()
-        [{1, 2, 3, 4}]
-        sage: DPs.random_element().parent() is OS
+        sage: DPs.first().poset(1).cover_relations()
+        [[2, 3], [1, 3]]
+        sage: DPs.first().poset(2).cover_relations()
+        [[2, 3], [1, 3]]
+        sage: DPs.last().poset(1).cover_relations()
+        []
+        sage: DPs.last().poset(2).cover_relations()
+        []
+        sage: DPs.random_element().parent() is DPs
         True
 
     ::
@@ -1327,27 +1329,22 @@ class DoublePosets(UniqueRepresentation, Parent):
         sage: DPs = DoublePosets("cat")
         sage: DPs  # random
         Double posets of {'a', 't', 'c'}
+        sage: DPs.cardinality()
+        25
         sage: DPs.first()
-        [[{'a', 'c', 't'}],
-         [{'a', 'c'}, {'t'}],
-         [{'a', 't'}, {'c'}],
-         [{'a'}, {'c', 't'}],
-         [{'a'}, {'c'}, {'t'}],
-         [{'a'}, {'t'}, {'c'}],
-         [{'c', 't'}, {'a'}],
-         [{'c'}, {'a', 't'}],
-         [{'c'}, {'a'}, {'t'}],
-         [{'c'}, {'t'}, {'a'}],
-         [{'t'}, {'a', 'c'}],
-         [{'t'}, {'a'}, {'c'}],
-         [{'t'}, {'c'}, {'a'}]]
+        Finite double poset containing 3 elements
+        sage: sorted(DPs.first().elements())
+        ['a', 'c', 't']
+        sage: DPs.random_element().parent() is DPs
+        True
 
     TESTS::
 
-        sage: S = DoublePosets()
-        sage: x = S([[3,5], [2], [1,4,6]])
+        sage: from sage.combinat.posets.double_posets import DiagramDoublePoset
+        sage: DPs = DoublePosets()
+        sage: x = DPs(DiagramDoublePoset([[3,3],[1]], partition=True))
         sage: x.parent()
-        Ordered set partitions
+        Double posets
     """
     @staticmethod
     def __classcall_private__(cls, s=None):
@@ -1358,8 +1355,6 @@ class DoublePosets(UniqueRepresentation, Parent):
 
             sage: DoublePosets(4)
             Double posets on {1, 2, 3, 4}
-            sage: DoublePosets(4, [1, 2, 1])
-            Double posets on {1, 2, 3, 4} into parts of size [1, 2, 1]
         """
         if s is None:
             return DoublePosets_all()
@@ -1378,8 +1373,8 @@ class DoublePosets(UniqueRepresentation, Parent):
 
         EXAMPLES::
 
-            sage: OS = DoublePosets(4)
-            sage: TestSuite(OS).run()
+            sage: DPs = DoublePosets(4)
+            sage: TestSuite(DPs).run()
         """
         self._set = s
         Parent.__init__(self, category=FiniteEnumeratedSets())
@@ -1390,8 +1385,8 @@ class DoublePosets(UniqueRepresentation, Parent):
 
         EXAMPLES::
 
-            sage: OS = DoublePosets(4)
-            sage: x = OS([[1,3],[2,4]]); x
+            sage: DPs = DoublePosets(4)
+            sage: x = DPs([[1,3],[2,4]]); x
             [{1, 3}, {2, 4}]
             sage: x.parent()
             Double posets on {1, 2, 3, 4}
@@ -1645,110 +1640,6 @@ class DoublePosets_s(DoublePosets):
     class Element(DoublePoset):
         pass
 
-
-# HOPF ALGEBRA FILE:
-
-
-# sage.doctest: needs sage.combinat sage.modules
-r"""
-Labelled double poset Hopf algebra (LDPSym)
-
-AUTHORS:
-
-- Yuxuan Sun and Darij Grinberg (2025-08-07): first implementation
-
-TESTS:
-
-TODO
-"""
-
-# ****************************************************************************
-#       Copyright (C) 2025 Yuxuan Sun <sun00816 at umn.edu>,
-#                          Darij Grinberg <darijgrinberg at gmail.com>
-#
-#  Distributed under the terms of the GNU General Public License (GPL)
-#  as published by the Free Software Foundation; either version 2 of
-#  the License, or (at your option) any later version.
-#                  https://www.gnu.org/licenses/
-# ****************************************************************************
-
-from sage.misc.bindable_class import BindableClass
-from sage.structure.parent import Parent
-from sage.structure.unique_representation import UniqueRepresentation
-from sage.structure.global_options import GlobalOptions
-from sage.categories.hopf_algebras import HopfAlgebras
-from sage.categories.realizations import Category_realization_of_parent
-from sage.combinat.free_module import CombinatorialFreeModule
-from sage.rings.integer_ring import ZZ
-# TODO: from sage.combinat.posets.double_posets import DoublePoset, DoublePosets
-
-
-class LabelledDoublePosetsHA_abstract(CombinatorialFreeModule, BindableClass):
-
-    def __init__(self, alg, graded=True):
-        
-        def sorting_key(X):
-            return 
-        CombinatorialFreeModule.__init__(self, alg.base_ring(),
-                                         DoublePosets(), #??????should it be this?
-                                         category=LabelledDoublePosetsHA(alg, graded),
-                                         sorting_key=sorting_key,
-                                         bracket='', prefix=self._prefix)
-        
-        def _repr_term(self. osp):
-            return self._prefix
-        
-        def _coerce_map_from_(self, R):
-            if isinstance(R, LabelledDoublePosetsHA_abstract):
-                if R.realization_of() == self.realization_of():
-                    return True
-                if not self.base_ring().has_coerce_map_from(R.base_ring()):
-                    return False
-                if self._basis_name == R._basis_name:  # The same basis
-                    def coerce_base_ring(self, x):
-                        return self._from_dict(x.monomial_coefficients())
-                    return coerce_base_ring
-                # Otherwise lift that basis up and then coerce over
-                target = getattr(self.realization_of(), R._basis_name)()
-                return self._coerce_map_via([target], R)
-            return super()._coerce_map_from_(R)
-        
-        def _an_element_(self):
-            return self([1]) #?????
-        
-
-
-class LabelledDoublePosetsHA(UniqueRepresentation, Parent):
-
-    def __init__(self, R):
-        """
-        Initialize ``self``.
-
-        """
-        category = HopfAlgebras(R).Graded().Connected()
-        if R.is_zero():
-            category = category.Commutative()
-        Parent.__init__(self, base=R, category=category.WithRealizations())
-
-    class Monomial(LabelledDoublePosetsHA_abstract):
-
-        _prefix='DP'
-        _basis_name = 'DoublePoset' #?
-
-        def product_on_basis(self, x, y):
-            #do internal product here?
-
-
-# def Jollenbeck(sigma, tau):
-#     from sage.combinat.permutation import Permutation
-#     if not isinstance(sigma, Permutation):
-#         sigma = Permutation(sigma)
-#     if not isinstance(tau, Permutation):
-#         sigma = Permutation(tau)
-
-#     if sigma == tau.inverse(): return 1
-#     return 0
-
 def internal_product_helper(D1, D2):
     r"""
     Iterate over all graphs ``D1`` `\times_phi` ``D2``
@@ -1785,3 +1676,4 @@ def internal_product_helper(D1, D2):
 
         D_phi = D1.graph(D2, phi)
         yield D_phi
+
