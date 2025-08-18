@@ -1213,44 +1213,6 @@ class SpecialDoublePoset(DoublePoset):
 
 
 
-
-def internal_product_helper(D1, D2):
-    r"""
-    Iterate over all graphs ``D1`` `\times_phi` ``D2``
-    for all increasing bijections ``phi`` from ``D1``
-    to ``D2``.
-
-    The internal product in the Hopf algebra
-    is the sum of these graphs.
-
-    TODO::
-
-        Doctest this.
-    """
-
-    E = D1.elements()
-    F = D2.elements()
-
-    if len(E) != len(F):
-        return
-
-    n = len(E)
-
-    for sigma in permutations(range(n)):
-        phi = {E[i]: F[sigma[i]] for i in range(n)}
-
-        # Check increasing
-        increasing_fail = any(
-            D1.leq(1, e1, e2) and not D2.leq(2, phi[e1], phi[e2])
-            for e1 in E for e2 in E if e1 != e2
-        )
-
-        if increasing_fail:
-            continue
-
-        D_phi = D1.graph(D2, phi)
-        yield D_phi
-
 def DiagramDoublePoset(D, partition=False):
     r"""
     The double poset corresponding to a diagram
@@ -1721,6 +1683,41 @@ from sage.rings.integer_ring import ZZ
 # TODO: from sage.combinat.posets.double_posets import DoublePoset, DoublePosets
 
 
+class LabelledDoublePosetsHA_abstract(CombinatorialFreeModule, BindableClass):
+
+    def __init__(self, alg, graded=True):
+        
+        def sorting_key(X):
+            return 
+        CombinatorialFreeModule.__init__(self, alg.base_ring(),
+                                         DoublePosets(), #??????should it be this?
+                                         category=LabelledDoublePosetsHA(alg, graded),
+                                         sorting_key=sorting_key,
+                                         bracket='', prefix=self._prefix)
+        
+        def _repr_term(self. osp):
+            return self._prefix
+        
+        def _coerce_map_from_(self, R):
+            if isinstance(R, LabelledDoublePosetsHA_abstract):
+                if R.realization_of() == self.realization_of():
+                    return True
+                if not self.base_ring().has_coerce_map_from(R.base_ring()):
+                    return False
+                if self._basis_name == R._basis_name:  # The same basis
+                    def coerce_base_ring(self, x):
+                        return self._from_dict(x.monomial_coefficients())
+                    return coerce_base_ring
+                # Otherwise lift that basis up and then coerce over
+                target = getattr(self.realization_of(), R._basis_name)()
+                return self._coerce_map_via([target], R)
+            return super()._coerce_map_from_(R)
+        
+        def _an_element_(self):
+            return self([1]) #?????
+        
+
+
 class LabelledDoublePosetsHA(UniqueRepresentation, Parent):
 
     def __init__(self, R):
@@ -1733,13 +1730,58 @@ class LabelledDoublePosetsHA(UniqueRepresentation, Parent):
             category = category.Commutative()
         Parent.__init__(self, base=R, category=category.WithRealizations())
 
+    class Monomial(LabelledDoublePosetsHA_abstract):
 
-def Jollenbeck(sigma, tau):
-    from sage.combinat.permutation import Permutation
-    if not isinstance(sigma, Permutation):
-        sigma = Permutation(sigma)
-    if not isinstance(tau, Permutation):
-        sigma = Permutation(tau)
+        _prefix='DP'
+        _basis_name = 'DoublePoset' #?
 
-    if sigma == tau.inverse(): return 1
-    return 0
+        def product_on_basis(self, x, y):
+            #do internal product here?
+
+
+# def Jollenbeck(sigma, tau):
+#     from sage.combinat.permutation import Permutation
+#     if not isinstance(sigma, Permutation):
+#         sigma = Permutation(sigma)
+#     if not isinstance(tau, Permutation):
+#         sigma = Permutation(tau)
+
+#     if sigma == tau.inverse(): return 1
+#     return 0
+
+def internal_product_helper(D1, D2):
+    r"""
+    Iterate over all graphs ``D1`` `\times_phi` ``D2``
+    for all increasing bijections ``phi`` from ``D1``
+    to ``D2``.
+
+    The internal product in the Hopf algebra
+    is the sum of these graphs.
+
+    TODO::
+
+        Doctest this.
+    """
+
+    E = D1.elements()
+    F = D2.elements()
+
+    if len(E) != len(F):
+        return
+
+    n = len(E)
+
+    for sigma in permutations(range(n)):
+        phi = {E[i]: F[sigma[i]] for i in range(n)}
+
+        # Check increasing
+        increasing_fail = any(
+            D1.leq(1, e1, e2) and not D2.leq(2, phi[e1], phi[e2])
+            for e1 in E for e2 in E if e1 != e2
+        )
+
+        if increasing_fail:
+            continue
+
+        D_phi = D1.graph(D2, phi)
+        yield D_phi
