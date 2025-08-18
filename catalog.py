@@ -44,6 +44,7 @@ Let ``<tab>`` indicate pressing the :kbd:`Tab` key.  So begin by typing
 - :class:`algebras.Moebius <sage.combinat.posets.moebius_algebra.MoebiusAlgebra>`
 - :class:`algebras.Jordan
   <sage.algebras.jordan_algebra.JordanAlgebra>`
+- :class:`algebras.LDPSym <sage.combinat.chas.ldpsym.LDPSym>`
 - :class:`algebras.Lie <sage.algebras.lie_algebras.lie_algebra.LieAlgebra>`
 - :class:`algebras.MalvenutoReutenauer <sage.combinat.fqsym.FreeQuasisymmetricFunctions>`
 - :class:`algebras.NilCoxeter
@@ -128,6 +129,7 @@ lazy_import('sage.combinat.fqsym', 'FreeQuasisymmetricFunctions', 'MalvenutoReut
 lazy_import('sage.combinat.chas.wqsym', 'WordQuasiSymmetricFunctions', 'WQSym')
 lazy_import('sage.combinat.chas.fsym', 'FreeSymmetricFunctions', 'FSym')
 lazy_import('sage.combinat.ncsf_qsym.qsym', 'QuasiSymmetricFunctions', 'QSym')
+lazy_import('sage.combinat.chas.ldpsym', 'LDPSym', 'LDPSym')
 lazy_import('sage.combinat.grossman_larson_algebras', 'GrossmanLarsonAlgebra', 'GrossmanLarson')
 lazy_import('sage.algebras.quantum_clifford', 'QuantumCliffordAlgebra', 'QuantumClifford')
 lazy_import('sage.algebras.quantum_oscillator', 'QuantumOscillatorAlgebra', 'QuantumOscillator')
