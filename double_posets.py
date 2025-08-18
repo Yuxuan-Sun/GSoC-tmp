@@ -1677,3 +1677,12 @@ def internal_product_helper(D1, D2):
         D_phi = D1.graph(D2, phi)
         yield D_phi
 
+# def Jollenbeck(sigma, tau):
+#     from sage.combinat.permutation import Permutation
+#     if not isinstance(sigma, Permutation):
+#         sigma = Permutation(sigma)
+#     if not isinstance(tau, Permutation):
+#         sigma = Permutation(tau)
+
+#     if sigma == tau.inverse(): return 1
+#     return 0

@@ -28,8 +28,7 @@ from sage.structure.global_options import GlobalOptions
 from sage.categories.hopf_algebras import HopfAlgebras
 from sage.categories.realizations import Category_realization_of_parent
 from sage.combinat.free_module import CombinatorialFreeModule
-from sage.rings.integer_ring import ZZ
-# TODO: from sage.combinat.posets.double_posets import DoublePoset, DoublePosets
+from sage.combinat.posets.double_posets import DoublePoset, DoublePosets
 
 class LDPSym_abstract(CombinatorialFreeModule, BindableClass):
     r"""
@@ -171,6 +170,17 @@ class LDPSym(UniqueRepresentation, Parent):
         if R.is_zero():
             category = category.Commutative()
         Parent.__init__(self, base=R, category=category.WithRealizations())
+
+    def _repr_(self):
+        """
+        Return the string representation of ``self``.
+
+        EXAMPLES::
+
+            sage: algebras.LDPSym(QQ)  # indirect doctest
+            LDPSym over Rational Field
+        """
+        return "LDPSym over {}".format(self.base_ring())
 
     class Monomial(LDPSym_abstract):
         r"""
@@ -487,15 +497,4 @@ class LDPSymBases(Category_realization_of_parent):
             return F.sum_of_terms((i.to_composition(), coeff)
                                   for i, coeff in MW(self))
 
-"""
-
-# def Jollenbeck(sigma, tau):
-#     from sage.combinat.permutation import Permutation
-#     if not isinstance(sigma, Permutation):
-#         sigma = Permutation(sigma)
-#     if not isinstance(tau, Permutation):
-#         sigma = Permutation(tau)
-
-#     if sigma == tau.inverse(): return 1
-#     return 0
 
